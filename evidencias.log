@@ -1,0 +1,46 @@
+Script started on 2026-11-12 11:45:02-03:00 [TERM="xterm-256color" TTY="/dev/pts/1" COLUMNS="155" LINES="9"]
+[?2004h]0;henrique@Lenovin: /mnt/c/Users/calad/dev/imp6/hac2[01;32mhenrique@Lenovin[00m:[01;34m/mnt/c/Users/calad/dev/imp6/hac2[00m$ cd /mnt/c/Users/calad/dev/imp6/hac2
+echo "=== S1: ambiente ==="
+date; whoami; pwd
+uname -a
+gcc --version | head -1
+echo "=== S1: arquivos e tabs do Makefile ==="
+ls -a
+cat -A Makefile | grep -n '\^I'
+echo "=== S1: compilacao do zero ==="
+make cleanmakels -l bankerecho "=== S1: execucao sem argumentos ==="./bankerecho "codigo de saida: $?"echo "=== S1: execucao valida ==="./banker 10 5 7[7mecho "codigo de saida: $?"[27m[7mecho "=== S1: argumento invalido ==="[27m[7m./banker 10 abc 7[27m[7mecho "codigo de saida: $?"[27m[7mecho "=== S1: git ignorando o log ==="[27m[7mgit status --short[27m[7mgit check-ignore -v evidencias.log[27m[7mecho "codigo de saida: $?"[27m[7mexit[27mecho "codigo de saida: $?"echo "=== S1: argumento invalido ==="./banker 10 abc 7echo "codigo de saida: $?"echo "=== S1: git ignorando o log ==="git status --shortgit check-ignore -v evidencias.logecho "codigo de saida: $?"exit
+[?2004l=== S1: ambiente ===
+Thu Nov 12 11:45:11 -03 2026
+henrique
+/mnt/c/Users/calad/dev/imp6/hac2
+Linux Lenovin 6.6.87.2-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Thu Jun  5 18:31:42 UTC 2025 aarch64 aarch64 aarch64 GNU/Linux
+gcc (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0
+=== S1: arquivos e tabs do Makefile ===
+[0m[34;42m.[0m  [34;42m..[0m  [34;42m.git[0m  [01;32m.gitignore[0m  [01;32mMakefile[0m  [01;32mbanker.c[0m  [01;32mbanker.exe[0m  [01;32mcommands.txt[0m  [01;32mcustomer.txt[0m  [01;32mevidencias.log[0m
+[32m[K7[m[K[36m[K:[m[K[01;31m[K^I[m[K$(CC) $(CFLAGS) -o banker banker.c$
+[32m[K10[m[K[36m[K:[m[K[01;31m[K^I[m[Krm -f banker banker.exe$
+=== S1: compilacao do zero ===
+rm -f banker banker.exe
+gcc -Wall -Wextra -std=c11 -o banker banker.c
+-rwxrwxrwx 1 henrique henrique 70808 Nov 12 11:45 [0m[01;32mbanker[0m
+=== S1: execucao sem argumentos ===
+Uso: ./banker <total_recurso_0> [total_recurso_1] ...
+Informe o total de instancias de cada recurso (inteiros nao negativos).
+Exemplo: ./banker 10 5 7
+codigo de saida: 1
+=== S1: execucao valida ===
+recursos: 3
+total de instancias: 10 5 7
+codigo de saida: 0
+=== S1: argumento invalido ===
+Erro: argumento 2 ("abc") nao e um inteiro nao negativo valido.
+codigo de saida: 1
+=== S1: git ignorando o log ===
+[31m??[m .gitignore
+[31m??[m Makefile
+[31m??[m banker.c
+.gitignore:7:evidencias.log	evidencias.log
+codigo de saida: 0
+exit
+
+Script done on 2026-11-12 11:45:12-03:00 [COMMAND_EXIT_CODE="0"]

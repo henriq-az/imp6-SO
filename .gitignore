@@ -1,0 +1,6 @@
+banker
+banker.exe
+*.o
+result.txt
+customer.txt
+commands.txt
