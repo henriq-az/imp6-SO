@@ -44,3 +44,100 @@ codigo de saida: 0
 exit
 
 Script done on 2026-11-12 11:45:12-03:00 [COMMAND_EXIT_CODE="0"]
+Script started on 2026-11-13 17:14:32-03:00 [TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="155" LINES="18"]
+[?2004h]0;henrique@Lenovin: /mnt/c/Users/calad/dev/imp6/hac2[01;32mhenrique@Lenovin[00m:[01;34m/mnt/c/Users/calad/dev/imp6/hac2[00m$ [7mhenrique@Lenovin:/mnt/c/Users/calad/dev/imp6$ [27m[1Phenrique@Lenovin:/mnt/c/Users/calad/dev/imp6$[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[Kcd /mnt/c/Users/calad/dev/imp6/hac2
+echo "=== S2: ambiente ==="
+date; whoami; pwd
+echo "=== S2: compilacao do zero ==="
+make clean
+make
+echo "=== S2: o que o customer.txt tem ==="
+cat customer.txt
+echo "(fim do arquivo, sem quebra de linha depois do 4,3,3)"
+echo "=== S2: leitura correta, 3 recursos ==="
+./banker 10 5 7
+echo "codigo de saida: $?"
+echo "=== S2: argumentos de menos ==="
+./banker 10 5
+echo "codigo de saida: $?"
+echo "=== S2: argumentos de mais ==="
+./banker 10 5 7 2
+echo "codigo de saida: $?"
+echo "=== S2: preparando casos invalidos em /tmp ==="rm -rf /tmp/teste-s2 && mkdir -p /tmp/teste-s2 && cd /tmp/teste-s2BANKER=/mnt/c/Users/calad/dev/imp6/hac2/bankerecho "=== S2: customer.txt ausente ==="ls$BANKER 10 5 7echo "codigo de saida: $?"echo "=== S2: linhas com larguras diferentes ==="printf '7,5,3\n3,2\n9,0,2' > customer.txtcat customer.txt; echo$BANKER 10 5 7echo "codigo de saida: $?"echo "=== S2: valor que nao e inteiro ==="printf '7,5,3\n3,x,2\n9,0,2' > customer.txt$BANKER 10 5 7echo "codigo de saida: $?"echo "=== S2: valor negativo ==="printf '7,5,3\n3,-1,2\n9,0,2' > customer.txt[7m$BANKER 10 5 7[27m[7mecho "codigo de saida: $?"[27m[7mecho "=== S2: arquivo vazio ==="[27m[7m: > customer.txt[27m[7m$BANKER 10 5 7[27m[7mecho "codigo de saida: $?"[27m[7mecho "=== S2: caso limite, um cliente e um recurso ==="[27m[7mprintf '4' > customer.txt[27m[7m$BANKER 7[27m[7mecho "codigo de saida: $?"[27m[7mecho "=== S2: caso limite, maximum todo zero ==="[27m[7mprintf '0,0,0\n0,0,0' > customer.txt[27m[7m$BANKER 10 5 7[27m[7mecho "codigo de saida: $?"[27m[7mcd /mnt/c/Users/calad/dev/imp6/hac2[27m[7mecho "=== S2: git ==="[27m[7mgit status --short[27m[7mexit[27m$BANKER 10 5 7echo "codigo de saida: $?"echo "=== S2: arquivo vazio ===": > customer.txt$BANKER 10 5 7echo "codigo de saida: $?"echo "=== S2: caso limite, um cliente e um recurso ==="printf '4' > customer.txt$BANKER 7echo "codigo de saida: $?"echo "=== S2: caso limite, maximum todo zero ==="printf '0,0,0\n0,0,0' > customer.txt$BANKER 10 5 7echo "codigo de saida: $?"cd /mnt/c/Users/calad/dev/imp6/hac2echo "=== S2: git ==="git status --shortexit
+[?2004l=== S2: ambiente ===
+Fri Nov 13 17:14:45 -03 2026
+henrique
+/mnt/c/Users/calad/dev/imp6/hac2
+=== S2: compilacao do zero ===
+rm -f banker banker.exe
+gcc -Wall -Wextra -std=c11 -o banker banker.c
+=== S2: o que o customer.txt tem ===
+7,5,3
+3,2,2
+9,0,2
+2,2,2
+4,3,3(fim do arquivo, sem quebra de linha depois do 4,3,3)
+=== S2: leitura correta, 3 recursos ===
+recursos: 3
+total de instancias: 10 5 7
+clientes: 5
+maximum:
+  cliente 0: 7 5 3
+  cliente 1: 3 2 2
+  cliente 2: 9 0 2
+  cliente 3: 2 2 2
+  cliente 4: 4 3 3
+codigo de saida: 0
+=== S2: argumentos de menos ===
+Erro: a quantidade de recursos informada na linha de comando e diferente da quantidade de recursos do arquivo customer.txt.
+  (linha 1 declara 3 valores, esperados 2)
+codigo de saida: 1
+=== S2: argumentos de mais ===
+Erro: a quantidade de recursos informada na linha de comando e diferente da quantidade de recursos do arquivo customer.txt.
+  (linha 1 declara 3 valores, esperados 4)
+codigo de saida: 1
+=== S2: preparando casos invalidos em /tmp ===
+=== S2: customer.txt ausente ===
+Erro: o arquivo customer.txt nao esta no formato indicado.
+  (nao foi possivel abrir o arquivo)
+codigo de saida: 1
+=== S2: linhas com larguras diferentes ===
+7,5,3
+3,2
+9,0,2
+Erro: a quantidade de recursos informada na linha de comando e diferente da quantidade de recursos do arquivo customer.txt.
+  (linha 2 declara 2 valores, esperados 3)
+codigo de saida: 1
+=== S2: valor que nao e inteiro ===
+Erro: o arquivo customer.txt nao esta no formato indicado.
+  (linha 2: esperados 3 inteiros nao negativos separados por virgula)
+codigo de saida: 1
+=== S2: valor negativo ===
+Erro: o arquivo customer.txt nao esta no formato indicado.
+  (linha 2: esperados 3 inteiros nao negativos separados por virgula)
+codigo de saida: 1
+=== S2: arquivo vazio ===
+Erro: o arquivo customer.txt nao esta no formato indicado.
+  (nenhum cliente encontrado)
+codigo de saida: 1
+=== S2: caso limite, um cliente e um recurso ===
+recursos: 1
+total de instancias: 7
+clientes: 1
+maximum:
+  cliente 0: 4
+codigo de saida: 0
+=== S2: caso limite, maximum todo zero ===
+recursos: 3
+total de instancias: 10 5 7
+clientes: 2
+maximum:
+  cliente 0: 0 0 0
+  cliente 1: 0 0 0
+codigo de saida: 0
+=== S2: git ===
+ [31mM[m banker.c
+ [31mM[m evidencias.log
+exit
+
+Script done on 2026-11-13 17:14:46-03:00 [COMMAND_EXIT_CODE="0"]
