@@ -11,7 +11,12 @@
  *
  * Sessao 4: o estado do banco (allocation e available) e a execucao do
  * comando "*", que imprime a tabela MAXIMUM | ALLOCATION | NEED no
- * result.txt. RQ e RL ainda nao fazem nada: Sessoes 5, 6 e 7.
+ * result.txt.
+ *
+ * Sessao 5: a execucao do RQ -- as checagens do need e do available, as
+ * mensagens de Allocate, exceed its maximum allocation e are not enough, e a
+ * alteracao de allocation e available. O RL e a Sessao 6 e o algoritmo de
+ * seguranca (result in an unsafe state) e a Sessao 7.
  *
  * Uso: ./banker <total_r0> <total_r1> ... <total_rN>
  */
@@ -632,6 +637,132 @@ static void imprimir_estado(FILE *saida, const int *maximum,
 }
 
 /*
+ * Imprime uma lista de valores no estilo SEM espaco no fim: um espaco antes
+ * de cada numero, nenhum depois do ultimo.
+ *
+ * Os dois estilos existem porque o professor usa os dois (ambiguidade A5). As
+ * linhas do Allocate e do exceed its maximum allocation trazem os numeros no
+ * meio da frase, com a palavra anterior ja terminada, entao o espaco vem na
+ * frente de cada valor:
+ *
+ *   Allocate to customer 0 the resources 0 2 1
+ *   The customer 2 request 0 1 0 was denied because exceed its maximum
+ *   allocation
+ *
+ * Nenhuma das duas termina em espaco.
+ */
+static void imprimir_lista(FILE *saida, const int *valores,
+                           int quantidade_de_recursos) {
+    int i;
+
+    for (i = 0; i < quantidade_de_recursos; i++) {
+        fprintf(saida, " %d", valores[i]);
+    }
+}
+
+/*
+ * Imprime uma lista de valores no estilo COM espaco no fim: cada numero
+ * seguido de um espaco. E o mesmo estilo que montar_coluna usa na tabela da
+ * Sessao 4, e o unico lugar que precisa dele aqui e a linha do are not
+ * enough, que o professor escreve com os dois grupos de numeros nesse estilo:
+ *
+ *   The resources 3 3 2 are not enough to customer 4 request 4 0 0
+ *
+ * (com um espaco tambem depois do ultimo 0, antes da quebra de linha). Por
+ * isso as palavras do meio dessa linha ja vem com espaco no fim: os numeros
+ * nao trazem o deles na frente.
+ */
+static void imprimir_lista_com_espaco_no_fim(FILE *saida, const int *valores,
+                                             int quantidade_de_recursos) {
+    int i;
+
+    for (i = 0; i < quantidade_de_recursos; i++) {
+        fprintf(saida, "%d ", valores[i]);
+    }
+}
+
+/*
+ * Executa um comando RQ: o cliente pede recursos ao banco.
+ *
+ * O pedido passa por tres perguntas, nesta ordem:
+ *
+ *   1. cabe no que falta para o cliente? (pedido > need, ou seja
+ *      pedido[i] > maximum[i] - allocation[i]) -> exceed its maximum
+ *      allocation;
+ *   2. o banco tem o que ele pediu? (pedido[i] > available[i]) -> are not
+ *      enough;
+ *   3. alocar deixaria o sistema seguro? -> result in an unsafe state.
+ *
+ * Passando as tres, aloca: allocation += pedido e available -= pedido.
+ *
+ * A ordem nao e arbitraria, e o arquivo do professor prova qual vem primeiro.
+ * O ultimo comando e "RQ 2 0 1 0"; naquele momento o cliente 2 tem need
+ * 6 0 0 e o banco tem 2 3 0 livre. Pela disponibilidade o pedido passaria,
+ * porque existem 3 unidades livres do recurso 1 -- mas a saida esperada diz
+ * exceed its maximum allocation. Logo a checagem do need roda antes da
+ * checagem do available; na ordem inversa essa linha sairia errada.
+ *
+ * A pergunta 3 e o algoritmo de seguranca, e fica para a Sessao 7: por
+ * enquanto todo pedido que passa pelas duas primeiras e alocado, e o
+ * "RQ 0 0 2 0" do arquivo do professor sai como Allocate em vez de denied.
+ */
+static void tratar_request(FILE *saida, const int *maximum, int *allocation,
+                           int *available, int cliente, const int *pedido,
+                           int quantidade_de_recursos) {
+    /* Os dois ponteiros existem so para nao repetir
+       allocation[cliente * quantidade_de_recursos + i] em cada comparacao. */
+    int *linha = allocation + cliente * quantidade_de_recursos;
+    const int *maximo = maximum + cliente * quantidade_de_recursos;
+    int i;
+
+    /* 1) O pedido cabe no que ainda falta para o cliente?
+          need nao e guardado em lugar nenhum: e maximo[i] - linha[i]. */
+    for (i = 0; i < quantidade_de_recursos; i++) {
+        if (pedido[i] > maximo[i] - linha[i]) {
+            fprintf(saida, "The customer %d request", cliente);
+            imprimir_lista(saida, pedido, quantidade_de_recursos);
+            fprintf(saida, " was denied because exceed its maximum "
+                           "allocation\n");
+            return;
+        }
+    }
+
+    /* 2) O banco tem livre o que ele pediu? A mensagem cita o available de
+          agora, antes de qualquer alteracao, que e o que o professor imprime. */
+    for (i = 0; i < quantidade_de_recursos; i++) {
+        if (pedido[i] > available[i]) {
+            fprintf(saida, "The resources ");
+            imprimir_lista_com_espaco_no_fim(saida, available,
+                                             quantidade_de_recursos);
+            fprintf(saida, "are not enough to customer %d request ", cliente);
+            imprimir_lista_com_espaco_no_fim(saida, pedido,
+                                             quantidade_de_recursos);
+            fprintf(saida, "\n");
+            return;
+        }
+    }
+
+    /* TODO (sessao 7): 3) o teste de seguranca entra aqui. Se alocar levar o
+       sistema a um estado inseguro, imprimir
+
+         The customer <i> request <pedido> was denied because result in an
+         unsafe state
+
+       (estilo sem espaco no fim, igual ao do exceed) e retornar sem alterar
+       allocation nem available. */
+
+    /* Passou pelas checagens: o banco entrega os recursos. */
+    for (i = 0; i < quantidade_de_recursos; i++) {
+        linha[i] += pedido[i];
+        available[i] -= pedido[i];
+    }
+
+    fprintf(saida, "Allocate to customer %d the resources", cliente);
+    imprimir_lista(saida, pedido, quantidade_de_recursos);
+    fprintf(saida, "\n");
+}
+
+/*
  * Le o commands.txt de novo, agora executando cada comando e escrevendo o que
  * sair em saida. Devolve 0 em caso de sucesso e -1 se nao der para ler o
  * arquivo, ja tendo avisado no stderr.
@@ -641,10 +772,10 @@ static void imprimir_estado(FILE *saida, const int *maximum,
  * primeiro comando rodar, e e so por isso que um erro na ultima linha nao
  * deixa um result.txt pela metade.
  *
- * Nesta sessao so o "*" faz alguma coisa. RQ e RL sao reconhecidos e
- * ignorados, entao o "*" do arquivo do professor ainda imprime o estado
- * inicial: allocation zerada, need igual ao maximum, available igual aos
- * argumentos da linha de comando.
+ * Nesta sessao o "*" e o RQ fazem efeito; o RL ainda e reconhecido e
+ * ignorado, e fica para a Sessao 6. Enquanto ele nao devolve nada ao banco, o
+ * available fica menor do que devia a partir do "RL 0 0 1 1", e as linhas
+ * seguintes do result.txt divergem da saida do professor por esse motivo.
  */
 static int executar_comandos(FILE *saida, const int *maximum, int *allocation,
                              int *available, int quantidade_de_clientes,
@@ -689,10 +820,13 @@ static int executar_comandos(FILE *saida, const int *maximum, int *allocation,
         if (tipo == '*') {
             imprimir_estado(saida, maximum, allocation, available,
                             quantidade_de_clientes, quantidade_de_recursos);
+        } else if (tipo == 'Q') {
+            tratar_request(saida, maximum, allocation, available, cliente,
+                           valores, quantidade_de_recursos);
         }
 
-        /* TODO (sessao 5): RL devolve ao banco o que o cliente libera. */
-        /* TODO (sessoes 6 e 7): RQ, o teste de seguranca e as mensagens. */
+        /* TODO (sessao 6): RL devolve ao banco o que o cliente libera. */
+        /* TODO (sessao 7): o teste de seguranca dentro de tratar_request. */
     }
 
     free(valores);

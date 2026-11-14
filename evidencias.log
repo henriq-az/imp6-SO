@@ -391,3 +391,107 @@ AVAILABLE 7 $
 exit
 
 Script done on 2026-11-14 13:33:57-03:00 [COMMAND_EXIT_CODE="0"]
+Script started on 2026-11-14 15:16:04-03:00 [TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="155" LINES="18"]
+[?2004h]0;henrique@Lenovin: /mnt/c/Users/calad/dev/imp6/hac2[01;32mhenrique@Lenovin[00m:[01;34m/mnt/c/Users/calad/dev/imp6/hac2[00m$ cd /mnt/c/Users/calad/dev/imp6/hac2
+REF=/mnt/c/Users/calad/dev/imp6/referencia/result.txt
+echo "=== S5: ambiente ==="
+date; whoami; pwd
+echo "=== S5: compilacao do zero ==="
+make clean
+make
+echo "=== S5: execucao com os arquivos do professor ==="
+./banker 10 5 7
+echo "codigo de saida: $?"
+cat -A result.txt
+echo "=== S5: diff completo, divergencia esperada nesta sessao ==="
+diff result.txt "$REF"
+echo "codigo do diff: $?"
+echo "=== S5: as quatro primeiras linhas devem bater ==="
+diff <(sed -n '1,4p' result.txt) <(sed -n '1,4p' "$REF") && echo "identicas"
+echo "=== S5: a linha do cliente 3 deve bater ==="
+diff <(sed -n '5p' result.txt) <(sed -n '6p' "$REF") && echo "identicas"
+echo "=== S5: a ultima linha deve bater ==="diff <(tail -1 result.txt) <(tail -1 "$REF") && echo "identicas"echo "=== S5: espacamento do are not enough, meu e do professor ==="grep 'are not enough' result.txt | cat -Agrep 'are not enough' "$REF" | cat -Aecho "=== S5: regressao ==="./banker 10 5echo "codigo de saida: $?"./banker 10 abc 7[7mecho "codigo de saida: $?"[27m[7mecho "=== S5: casos limite em /tmp ==="[27m[7mrm -rf /tmp/teste-s5 && mkdir -p /tmp/teste-s5 && cd /tmp/teste-s5[27m[7mBANKER=/mnt/c/Users/calad/dev/imp6/hac2/banker[27m[7mecho "=== S5: pedido zero, pedido exato, e pedido acima do need ==="[27m[7mprintf '2,2,2' > customer.txt[27m[7mprintf 'RQ 0 0 0 0\nRQ 0 2 2 2\n*\nRQ 0 1 0 0' > commands.txt[27m[7m$BANKER 2 2 2[27m[7mcat -A result.txt[27m[7mecho "=== S5: need sobra mas o banco nao tem ==="[27m[7mprintf '5,5,5' > customer.txt[27m[7mprintf 'RQ 0 3 0 0' > commands.txt[27m[7m$BANKER 2 2 2[27m[7mcat -A result.txt[27m[7mcd /mnt/c/Users/calad/dev/imp6/hac2[27m[7mecho "=== S5: git ==="[27m[7mgit status --short[27m[7mexit[27mecho "codigo de saida: $?"echo "=== S5: casos limite em /tmp ==="rm -rf /tmp/teste-s5 && mkdir -p /tmp/teste-s5 && cd /tmp/teste-s5BANKER=/mnt/c/Users/calad/dev/imp6/hac2/bankerecho "=== S5: pedido zero, pedido exato, e pedido acima do need ==="printf '2,2,2' > customer.txtprintf 'RQ 0 0 0 0\nRQ 0 2 2 2\n*\nRQ 0 1 0 0' > commands.txt$BANKER 2 2 2cat -A result.txtecho "=== S5: need sobra mas o banco nao tem ==="printf '5,5,5' > customer.txtprintf 'RQ 0 3 0 0' > commands.txt$BANKER 2 2 2cat -A result.txtcd /mnt/c/Users/calad/dev/imp6/hac2echo "=== S5: git ==="git status --shortexit
+[?2004l=== S5: ambiente ===
+Sat Nov 14 15:16:07 -03 2026
+henrique
+/mnt/c/Users/calad/dev/imp6/hac2
+=== S5: compilacao do zero ===
+rm -f banker banker.exe
+gcc -Wall -Wextra -std=c11 -o banker banker.c
+=== S5: execucao com os arquivos do professor ===
+recursos: 3
+available: 3 0 1
+clientes: 5
+codigo de saida: 0
+Allocate to customer 0 the resources 0 2 1$
+Allocate to customer 2 the resources 3 0 2$
+Allocate to customer 1 the resources 2 0 0$
+Allocate to customer 4 the resources 0 0 2$
+Allocate to customer 3 the resources 2 1 1$
+MAXIMUM   |   ALLOCATION  |   NEED$
+7 5 3     |   0 2 1       |   7 3 2 $
+3 2 2     |   2 0 0       |   1 2 2 $
+9 0 2     |   3 0 2       |   6 0 0 $
+2 2 2     |   2 1 1       |   0 1 1 $
+4 3 3     |   0 0 2       |   4 3 1 $
+AVAILABLE 3 2 1 $
+The resources 3 2 1 are not enough to customer 4 request 4 0 0 $
+The resources 3 2 1 are not enough to customer 1 request 1 0 2 $
+Allocate to customer 0 the resources 0 2 0$
+The customer 2 request 0 1 0 was denied because exceed its maximum allocation$
+=== S5: diff completo, divergencia esperada nesta sessao ===
+4a5
+> Release from customer 0 the resources 0 1 1
+7c8
+< 7 5 3     |   0 2 1       |   7 3 2 
+---
+> 7 5 3     |   0 1 0       |   7 4 3 
+12,15c13,16
+< AVAILABLE 3 2 1 
+< The resources 3 2 1 are not enough to customer 4 request 4 0 0 
+< The resources 3 2 1 are not enough to customer 1 request 1 0 2 
+< Allocate to customer 0 the resources 0 2 0
+---
+> AVAILABLE 3 3 2 
+> The resources 3 3 2 are not enough to customer 4 request 4 0 0 
+> Allocate to customer 1 the resources 1 0 2
+> The customer 0 request 0 2 0 was denied because result in an unsafe state
+codigo do diff: 1
+=== S5: as quatro primeiras linhas devem bater ===
+identicas
+=== S5: a linha do cliente 3 deve bater ===
+identicas
+=== S5: a ultima linha deve bater ===
+identicas
+=== S5: espacamento do are not enough, meu e do professor ===
+The resources 3 2 1 are not enough to customer 4 request 4 0 0 $
+The resources 3 2 1 are not enough to customer 1 request 1 0 2 $
+The resources 3 3 2 are not enough to customer 4 request 4 0 0 $
+=== S5: regressao ===
+Erro: a quantidade de recursos informada na linha de comando e diferente da quantidade de recursos do arquivo customer.txt.
+  (linha 1 declara 3 valores, esperados 2)
+codigo de saida: 1
+Erro: argumento 2 ("abc") nao e um inteiro nao negativo valido.
+codigo de saida: 1
+=== S5: casos limite em /tmp ===
+=== S5: pedido zero, pedido exato, e pedido acima do need ===
+recursos: 3
+available: 0 0 0
+clientes: 1
+Allocate to customer 0 the resources 0 0 0$
+Allocate to customer 0 the resources 2 2 2$
+MAXIMUM   |   ALLOCATION  |   NEED$
+2 2 2     |   2 2 2       |   0 0 0 $
+AVAILABLE 0 0 0 $
+The customer 0 request 1 0 0 was denied because exceed its maximum allocation$
+=== S5: need sobra mas o banco nao tem ===
+recursos: 3
+available: 2 2 2
+clientes: 1
+The resources 2 2 2 are not enough to customer 0 request 3 0 0 $
+=== S5: git ===
+ [31mM[m banker.c
+ [31mM[m evidencias.log
+exit
+
+Script done on 2026-11-14 15:16:08-03:00 [COMMAND_EXIT_CODE="0"]
