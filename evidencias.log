@@ -141,3 +141,160 @@ codigo de saida: 0
 exit
 
 Script done on 2026-11-13 17:14:46-03:00 [COMMAND_EXIT_CODE="0"]
+Script started on 2026-11-13 21:56:19-03:00 [TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="155" LINES="18"]
+[?2004h]0;henrique@Lenovin: /mnt/c/Users/calad/dev/imp6/hac2[01;32mhenrique@Lenovin[00m:[01;34m/mnt/c/Users/calad/dev/imp6/hac2[00m$ cd /mnt/c/Users/calad/dev/imp6/hac2
+echo "=== S3: ambiente ==="
+date; whoami; pwd
+echo "=== S3: compilacao do zero ==="
+make clean
+make
+echo "=== S3: o que o commands.txt tem ==="
+cat commands.txt
+echo "(fim do arquivo, sem quebra de linha depois do RQ 2 0 1 0)"
+echo "=== S3: leitura correta, 11 comandos ==="
+./banker 10 5 7
+echo "codigo de saida: $?"
+echo "=== S3: regressao da S1 e da S2 ==="
+./banker 10 5
+echo "codigo de saida: $?"
+./banker 10 abc 7
+echo "codigo de saida: $?"
+echo "=== S3: preparando casos em /tmp ==="
+rm -rf /tmp/teste-s3 && mkdir -p /tmp/teste-s3 && cd /tmp/teste-s3BANKER=/mnt/c/Users/calad/dev/imp6/hac2/bankerprintf '7,5,3\n3,2,2\n9,0,2\n2,2,2\n4,3,3' > customer.txtecho "=== S3: commands.txt ausente ==="ls$BANKER 10 5 7echo "codigo de saida: $?"echo "=== S3: comando desconhecido ==="printf 'RQ 0 1 1 1\nXX 0 1 1 1' > commands.txt$BANKER 10 5 7echo "codigo de saida: $?"echo "=== S3: valores de menos ==="printf 'RQ 0 1 1' > commands.txt$BANKER 10 5 7echo "codigo de saida: $?"echo "=== S3: valores de mais ==="printf 'RQ 0 1 1 1 1' > commands.txt$BANKER 10 5 7echo "codigo de saida: $?"echo "=== S3: asterisco com lixo depois ==="printf '* 1' > commands.txt$BANKER 10 5 7echo "codigo de saida: $?"echo "=== S3: valor que nao e inteiro ==="printf 'RQ 0 1 a 1' > commands.txt$BANKER 10 5 7echo "codigo de saida: $?"echo "=== S3: cliente fora da faixa ==="printf 'RQ 9 1 1 1' > commands.txt$BANKER 10 5 7echo "codigo de saida: $?"echo "=== S3: cliente negativo ==="printf 'RQ -1 1 1 1' > commands.txt$BANKER 10 5 7[7mecho "codigo de saida: $?"[27m[7mecho "=== S3: caso limite, so o asterisco ==="[27m[7mprintf '*' > commands.txt[27m[7m$BANKER 10 5 7[27m[7mecho "codigo de saida: $?"[27m[7mecho "=== S3: caso limite, arquivo vazio ==="[27m[7m: > commands.txt[27m[7m$BANKER 10 5 7[27m[7mecho "codigo de saida: $?"[27m[7mecho "=== S3: caso limite, um recurso so ==="[27m[7mprintf '4\n2' > customer.txt[27m[7mprintf 'RQ 0 1\nRL 0 1\n*' > commands.txt[27m[7m$BANKER 7[27m[7mecho "codigo de saida: $?"[27m[7mcd /mnt/c/Users/calad/dev/imp6/hac2[27m[7mecho "=== S3: git ==="[27m[7mgit status --short[27m[7mexit[27mecho "codigo de saida: $?"echo "=== S3: caso limite, so o asterisco ==="printf '*' > commands.txt$BANKER 10 5 7echo "codigo de saida: $?"echo "=== S3: caso limite, arquivo vazio ===": > commands.txt$BANKER 10 5 7echo "codigo de saida: $?"echo "=== S3: caso limite, um recurso so ==="printf '4\n2' > customer.txtprintf 'RQ 0 1\nRL 0 1\n*' > commands.txt$BANKER 7echo "codigo de saida: $?"cd /mnt/c/Users/calad/dev/imp6/hac2echo "=== S3: git ==="git status --shortexit
+[?2004l=== S3: ambiente ===
+Fri Nov 13 21:56:21 -03 2026
+henrique
+/mnt/c/Users/calad/dev/imp6/hac2
+=== S3: compilacao do zero ===
+rm -f banker banker.exe
+gcc -Wall -Wextra -std=c11 -o banker banker.c
+=== S3: o que o commands.txt tem ===
+RQ 0 0 2 1
+RQ 2 3 0 2
+RQ 1 2 0 0
+RQ 4 0 0 2
+RL 0 0 1 1
+RQ 3 2 1 1
+*
+RQ 4 4 0 0
+RQ 1 1 0 2
+RQ 0 0 2 0
+RQ 2 0 1 0(fim do arquivo, sem quebra de linha depois do RQ 2 0 1 0)
+=== S3: leitura correta, 11 comandos ===
+comandos de commands.txt:
+  linha 1: RQ cliente 0, valores: 0 2 1
+  linha 2: RQ cliente 2, valores: 3 0 2
+  linha 3: RQ cliente 1, valores: 2 0 0
+  linha 4: RQ cliente 4, valores: 0 0 2
+  linha 5: RL cliente 0, valores: 0 1 1
+  linha 6: RQ cliente 3, valores: 2 1 1
+  linha 7: * (imprimir o estado)
+  linha 8: RQ cliente 4, valores: 4 0 0
+  linha 9: RQ cliente 1, valores: 1 0 2
+  linha 10: RQ cliente 0, valores: 0 2 0
+  linha 11: RQ cliente 2, valores: 0 1 0
+comandos validados: 11
+recursos: 3
+total de instancias: 10 5 7
+clientes: 5
+maximum:
+  cliente 0: 7 5 3
+  cliente 1: 3 2 2
+  cliente 2: 9 0 2
+  cliente 3: 2 2 2
+  cliente 4: 4 3 3
+codigo de saida: 0
+=== S3: regressao da S1 e da S2 ===
+Erro: a quantidade de recursos informada na linha de comando e diferente da quantidade de recursos do arquivo customer.txt.
+  (linha 1 declara 3 valores, esperados 2)
+codigo de saida: 1
+Erro: argumento 2 ("abc") nao e um inteiro nao negativo valido.
+codigo de saida: 1
+=== S3: preparando casos em /tmp ===
+=== S3: commands.txt ausente ===
+customer.txt
+Erro: o arquivo commands.txt nao esta no formato indicado.
+  (nao foi possivel abrir o arquivo)
+codigo de saida: 1
+=== S3: comando desconhecido ===
+comandos de commands.txt:
+  linha 1: RQ cliente 0, valores: 1 1 1
+Erro: o arquivo commands.txt nao esta no formato indicado.
+  (linha 2: esperado "RQ <cliente> <3 valores>", "RL <cliente> <3 valores>" ou "*", com inteiros nao negativos)
+codigo de saida: 1
+=== S3: valores de menos ===
+comandos de commands.txt:
+Erro: a quantidade de recursos informada na linha de comando e diferente da quantidade de recursos do arquivo commands.txt.
+  (linha 1 declara 2 valores, esperados 3)
+codigo de saida: 1
+=== S3: valores de mais ===
+comandos de commands.txt:
+Erro: a quantidade de recursos informada na linha de comando e diferente da quantidade de recursos do arquivo commands.txt.
+  (linha 1 declara 4 valores, esperados 3)
+codigo de saida: 1
+=== S3: asterisco com lixo depois ===
+comandos de commands.txt:
+Erro: o arquivo commands.txt nao esta no formato indicado.
+  (linha 1: esperado "RQ <cliente> <3 valores>", "RL <cliente> <3 valores>" ou "*", com inteiros nao negativos)
+codigo de saida: 1
+=== S3: valor que nao e inteiro ===
+comandos de commands.txt:
+Erro: o arquivo commands.txt nao esta no formato indicado.
+  (linha 1: esperado "RQ <cliente> <3 valores>", "RL <cliente> <3 valores>" ou "*", com inteiros nao negativos)
+codigo de saida: 1
+=== S3: cliente fora da faixa ===
+comandos de commands.txt:
+Erro: o arquivo commands.txt nao esta no formato indicado.
+  (linha 1: cliente 9 nao existe; o customer.txt declara 5 clientes, de 0 a 4)
+codigo de saida: 1
+=== S3: cliente negativo ===
+comandos de commands.txt:
+Erro: o arquivo commands.txt nao esta no formato indicado.
+  (linha 1: esperado "RQ <cliente> <3 valores>", "RL <cliente> <3 valores>" ou "*", com inteiros nao negativos)
+codigo de saida: 1
+=== S3: caso limite, so o asterisco ===
+comandos de commands.txt:
+  linha 1: * (imprimir o estado)
+comandos validados: 1
+recursos: 3
+total de instancias: 10 5 7
+clientes: 5
+maximum:
+  cliente 0: 7 5 3
+  cliente 1: 3 2 2
+  cliente 2: 9 0 2
+  cliente 3: 2 2 2
+  cliente 4: 4 3 3
+codigo de saida: 0
+=== S3: caso limite, arquivo vazio ===
+comandos de commands.txt:
+comandos validados: 0
+recursos: 3
+total de instancias: 10 5 7
+clientes: 5
+maximum:
+  cliente 0: 7 5 3
+  cliente 1: 3 2 2
+  cliente 2: 9 0 2
+  cliente 3: 2 2 2
+  cliente 4: 4 3 3
+codigo de saida: 0
+=== S3: caso limite, um recurso so ===
+comandos de commands.txt:
+  linha 1: RQ cliente 0, valores: 1
+  linha 2: RL cliente 0, valores: 1
+  linha 3: * (imprimir o estado)
+comandos validados: 3
+recursos: 1
+total de instancias: 7
+clientes: 2
+maximum:
+  cliente 0: 4
+  cliente 1: 2
+codigo de saida: 0
+=== S3: git ===
+ [31mM[m banker.c
+ [31mM[m evidencias.log
+exit
+
+Script done on 2026-11-13 21:56:22-03:00 [COMMAND_EXIT_CODE="0"]

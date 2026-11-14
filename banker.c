@@ -7,6 +7,9 @@
  *
  * Sessao 2: leitura do customer.txt e montagem da matriz maximum.
  *
+ * Sessao 3: leitura e validacao do commands.txt. Esta sessao so valida:
+ * a execucao dos comandos entra na Sessao 5.
+ *
  * Uso: ./banker <total_r0> <total_r1> ... <total_rN>
  */
 
@@ -18,19 +21,34 @@
 #include <string.h>
 
 #define ARQUIVO_CUSTOMER "customer.txt"
+#define ARQUIVO_COMMANDS "commands.txt"
+
+/* Os campos de uma linha do commands.txt sao separados por espaco, e nao
+   por virgula como no customer.txt. A tabulacao entra na lista porque e o
+   outro jeito de um editor escrever a mesma separacao. */
+#define SEPARADORES_DO_COMANDO " \t"
 
 /* Limita o comprimento de UMA linha do arquivo, nao a quantidade de
    clientes nem a de recursos: essas duas continuam descobertas em tempo
    de execucao, como o enunciado exige. */
 #define TAMANHO_MAXIMO_DA_LINHA 1024
 
-/* As duas mensagens de erro previstas no enunciado.
+/* As duas mensagens de erro previstas no enunciado. O %s recebe o nome do
+   arquivo: as mesmas duas mensagens valem para o customer.txt e para o
+   commands.txt, e quem le o erro precisa saber de qual dos dois se trata.
    TODO: trocar o texto abaixo pelo texto literal do enunciado. */
 #define ERRO_QUANTIDADE_DE_RECURSOS                                          \
     "Erro: a quantidade de recursos informada na linha de comando e "        \
-    "diferente da quantidade de recursos do arquivo " ARQUIVO_CUSTOMER ".\n"
+    "diferente da quantidade de recursos do arquivo %s.\n"
 #define ERRO_FORMATO_DO_ARQUIVO                                              \
-    "Erro: o arquivo " ARQUIVO_CUSTOMER " nao esta no formato indicado.\n"
+    "Erro: o arquivo %s nao esta no formato indicado.\n"
+
+/* Resultados de ler_comando. Sao tres e nao dois porque os dois erros do
+   enunciado sao diferentes: quantidade de valores errada e o erro (1), e
+   qualquer outro defeito de forma e o erro (2). */
+#define COMANDO_OK 0
+#define COMANDO_FORMATO_INVALIDO (-1)
+#define COMANDO_QUANTIDADE_INVALIDA (-2)
 
 /*
  * Converte texto em inteiro nao negativo.
@@ -192,7 +210,7 @@ static int *ler_customer(int quantidade_de_recursos,
 
     arquivo = fopen(ARQUIVO_CUSTOMER, "r");
     if (arquivo == NULL) {
-        fprintf(stderr, ERRO_FORMATO_DO_ARQUIVO);
+        fprintf(stderr, ERRO_FORMATO_DO_ARQUIVO, ARQUIVO_CUSTOMER);
         fprintf(stderr, "  (nao foi possivel abrir o arquivo)\n");
         return NULL;
     }
@@ -209,7 +227,7 @@ static int *ler_customer(int quantidade_de_recursos,
         tamanho = (int) strlen(linha);
         if (tamanho == TAMANHO_MAXIMO_DA_LINHA - 1 &&
             linha[tamanho - 1] != '\n') {
-            fprintf(stderr, ERRO_FORMATO_DO_ARQUIVO);
+            fprintf(stderr, ERRO_FORMATO_DO_ARQUIVO, ARQUIVO_CUSTOMER);
             fprintf(stderr, "  (linha %d longa demais)\n", numero_da_linha);
             fclose(arquivo);
             return NULL;
@@ -225,7 +243,7 @@ static int *ler_customer(int quantidade_de_recursos,
            comparadas com o mesmo numero de recursos. */
         valores = contar_valores_na_linha(linha);
         if (valores != quantidade_de_recursos) {
-            fprintf(stderr, ERRO_QUANTIDADE_DE_RECURSOS);
+            fprintf(stderr, ERRO_QUANTIDADE_DE_RECURSOS, ARQUIVO_CUSTOMER);
             fprintf(stderr, "  (linha %d declara %d valores, esperados %d)\n",
                     numero_da_linha, valores, quantidade_de_recursos);
             fclose(arquivo);
@@ -236,7 +254,7 @@ static int *ler_customer(int quantidade_de_recursos,
     }
 
     if (clientes == 0) {         /* arquivo vazio ou so com linhas em branco */
-        fprintf(stderr, ERRO_FORMATO_DO_ARQUIVO);
+        fprintf(stderr, ERRO_FORMATO_DO_ARQUIVO, ARQUIVO_CUSTOMER);
         fprintf(stderr, "  (nenhum cliente encontrado)\n");
         fclose(arquivo);
         return NULL;
@@ -267,7 +285,7 @@ static int *ler_customer(int quantidade_de_recursos,
         if (ler_valores_da_linha(linha,
                                  maximum + cliente * quantidade_de_recursos,
                                  quantidade_de_recursos) != 0) {
-            fprintf(stderr, ERRO_FORMATO_DO_ARQUIVO);
+            fprintf(stderr, ERRO_FORMATO_DO_ARQUIVO, ARQUIVO_CUSTOMER);
             fprintf(stderr, "  (linha %d: esperados %d inteiros nao "
                             "negativos separados por virgula)\n",
                     numero_da_linha, quantidade_de_recursos);
@@ -282,6 +300,244 @@ static int *ler_customer(int quantidade_de_recursos,
     fclose(arquivo);
     *quantidade_de_clientes = clientes;
     return maximum;
+}
+
+/*
+ * Conta os campos de uma linha de comando, tratando qualquer sequencia de
+ * espacos e tabulacoes como um separador so.
+ *
+ * Existe separada de ler_comando porque strtok escreve na linha: contar os
+ * campos antes de tokenizar e o que permite dizer, na mensagem de erro,
+ * quantos valores a linha declarava quando a quantidade esta errada.
+ */
+static int contar_campos_na_linha(const char *linha) {
+    int campos = 0;
+    int dentro_de_um_campo = 0;
+    int i;
+
+    for (i = 0; linha[i] != '\0'; i++) {
+        if (linha[i] == ' ' || linha[i] == '\t') {
+            dentro_de_um_campo = 0;
+        } else if (!dentro_de_um_campo) {
+            dentro_de_um_campo = 1;
+            campos++;
+        }
+    }
+    return campos;
+}
+
+/*
+ * Entende UMA linha do commands.txt.
+ *
+ * Grava em *tipo o caractere 'Q' (RQ), 'L' (RL) ou '*'; em *cliente o indice
+ * do cliente; e em valores[0..quantidade_de_recursos-1] os valores pedidos ou
+ * liberados. Na linha "*" nem *cliente nem valores sao tocados.
+ *
+ * Devolve COMANDO_OK, COMANDO_QUANTIDADE_INVALIDA (RQ/RL com quantidade de
+ * valores diferente da quantidade de recursos) ou COMANDO_FORMATO_INVALIDO.
+ *
+ * Escreve na linha, porque strtok troca cada separador por '\0'. E o unico
+ * lugar do programa que sabe a forma de um comando: serve a validacao desta
+ * sessao e vai servir a execucao na Sessao 5, sem um segundo parser.
+ */
+static int ler_comando(char *linha, char *tipo, int *cliente, int *valores,
+                       int quantidade_de_recursos) {
+    int campos = contar_campos_na_linha(linha);
+    char *campo = NULL;
+    int i;
+
+    campo = strtok(linha, SEPARADORES_DO_COMANDO);
+    if (campo == NULL) {
+        return COMANDO_FORMATO_INVALIDO;   /* linha sem campo nenhum */
+    }
+
+    if (strcmp(campo, "*") == 0) {
+        /* O "*" e um comando sozinho: qualquer campo depois dele e erro. */
+        if (campos != 1) {
+            return COMANDO_FORMATO_INVALIDO;
+        }
+        *tipo = '*';
+        return COMANDO_OK;
+    }
+
+    if (strcmp(campo, "RQ") == 0) {
+        *tipo = 'Q';
+    } else if (strcmp(campo, "RL") == 0) {
+        *tipo = 'L';
+    } else {
+        return COMANDO_FORMATO_INVALIDO;   /* nao e RQ, nem RL, nem * */
+    }
+
+    /* Uma linha RQ/RL tem exatamente 2 + quantidade_de_recursos campos: o
+       comando, o cliente e um valor por recurso.
+
+       Menos de dois campos e um RQ/RL sem nem o indice do cliente, defeito de
+       forma e nao de quantidade de valores; de dois campos em diante, a
+       diferenca de largura e o erro (1) do enunciado. Conferir a largura antes
+       de converter campo nenhum tambem garante que os strtok seguintes nao
+       devolvem NULL. */
+    if (campos < 2) {
+        return COMANDO_FORMATO_INVALIDO;
+    }
+    if (campos != 2 + quantidade_de_recursos) {
+        return COMANDO_QUANTIDADE_INVALIDA;
+    }
+
+    campo = strtok(NULL, SEPARADORES_DO_COMANDO);
+    if (converter_inteiro_nao_negativo(campo, cliente) != 0) {
+        return COMANDO_FORMATO_INVALIDO;
+    }
+
+    for (i = 0; i < quantidade_de_recursos; i++) {
+        campo = strtok(NULL, SEPARADORES_DO_COMANDO);
+        if (converter_inteiro_nao_negativo(campo, &valores[i]) != 0) {
+            return COMANDO_FORMATO_INVALIDO;
+        }
+    }
+
+    return COMANDO_OK;
+}
+
+/*
+ * Le o commands.txt inteiro conferindo a forma de cada comando, sem executar
+ * nada. Devolve 0 se o arquivo todo esta valido e -1 no primeiro erro, ja
+ * tendo avisado no stderr.
+ *
+ * O enunciado manda checar todos os parametros antes de aceita-los. A leitura
+ * mais segura disso e validar o arquivo inteiro antes do primeiro comando: se
+ * o comando 9 estiver malformado, o programa nao deveria ter alocado nada nos
+ * comandos 1 a 8 e deixado um result.txt pela metade. Por isso a validacao e
+ * uma passada propria, e a execucao (Sessao 5) vai reler o arquivo do zero em
+ * vez de guardar os comandos em memoria.
+ *
+ * Duas decisoes minhas, que o enunciado nao cobre:
+ *
+ * - indice de cliente fora da faixa (um "RQ 9 ..." com cinco clientes) e
+ *   tratado como erro de formato, porque nao existe nada razoavel a fazer com
+ *   esse comando e aceitar em silencio esconderia um arquivo de entrada
+ *   errado;
+ * - commands.txt sem comando nenhum e aceito, e vai gerar um result.txt
+ *   vazio. Zero comandos e uma entrada degenerada mas coerente, e recusar
+ *   seria inventar uma regra.
+ *
+ * Um RL que libera mais do que o cliente tem alocado nao e erro de formato, e
+ * erro de estado: so da para saber na hora de executar, e fica para a
+ * Sessao 5.
+ */
+static int validar_commands(int quantidade_de_recursos,
+                            int quantidade_de_clientes) {
+    FILE *arquivo = NULL;
+    char linha[TAMANHO_MAXIMO_DA_LINHA];
+    int *valores = NULL;
+    int numero_da_linha = 0;
+    int comandos = 0;
+    int i;
+
+    arquivo = fopen(ARQUIVO_COMMANDS, "r");
+    if (arquivo == NULL) {
+        fprintf(stderr, ERRO_FORMATO_DO_ARQUIVO, ARQUIVO_COMMANDS);
+        fprintf(stderr, "  (nao foi possivel abrir o arquivo)\n");
+        return -1;
+    }
+
+    /* Um vetor de valores basta para todas as linhas, e o malloc fica fora do
+       laco: alocar e liberar a cada linha funcionaria, mas nao tem motivo. */
+    valores = malloc((size_t) quantidade_de_recursos * sizeof(int));
+    if (valores == NULL) {
+        fprintf(stderr, "Erro: falha ao alocar memoria para %d recursos.\n",
+                quantidade_de_recursos);
+        fclose(arquivo);
+        return -1;
+    }
+
+    /* Saida temporaria de conferencia: sai na Sessao 7, quando o result.txt
+       passa a ser a saida oficial. */
+    printf("comandos de %s:\n", ARQUIVO_COMMANDS);
+
+    while (fgets(linha, TAMANHO_MAXIMO_DA_LINHA, arquivo) != NULL) {
+        char tipo = 0;
+        int cliente = 0;
+        int tamanho;
+        int campos;
+        int resultado;
+
+        numero_da_linha++;
+
+        /* Linha maior que o buffer: fgets parou no meio dela, entao o que
+           sobrou no arquivo e o resto desta linha, nao a proxima. */
+        tamanho = (int) strlen(linha);
+        if (tamanho == TAMANHO_MAXIMO_DA_LINHA - 1 &&
+            linha[tamanho - 1] != '\n') {
+            fprintf(stderr, ERRO_FORMATO_DO_ARQUIVO, ARQUIVO_COMMANDS);
+            fprintf(stderr, "  (linha %d longa demais)\n", numero_da_linha);
+            free(valores);
+            fclose(arquivo);
+            return -1;
+        }
+
+        remover_fim_de_linha(linha);
+        if (linha_em_branco(linha)) {
+            continue;
+        }
+
+        campos = contar_campos_na_linha(linha);
+        resultado = ler_comando(linha, &tipo, &cliente, valores,
+                                quantidade_de_recursos);
+
+        if (resultado == COMANDO_QUANTIDADE_INVALIDA) {
+            fprintf(stderr, ERRO_QUANTIDADE_DE_RECURSOS, ARQUIVO_COMMANDS);
+            fprintf(stderr, "  (linha %d declara %d valores, esperados %d)\n",
+                    numero_da_linha, campos - 2, quantidade_de_recursos);
+            free(valores);
+            fclose(arquivo);
+            return -1;
+        }
+
+        if (resultado != COMANDO_OK) {
+            fprintf(stderr, ERRO_FORMATO_DO_ARQUIVO, ARQUIVO_COMMANDS);
+            fprintf(stderr, "  (linha %d: esperado \"RQ <cliente> <%d "
+                            "valores>\", \"RL <cliente> <%d valores>\" ou "
+                            "\"*\", com inteiros nao negativos)\n",
+                    numero_da_linha, quantidade_de_recursos,
+                    quantidade_de_recursos);
+            free(valores);
+            fclose(arquivo);
+            return -1;
+        }
+
+        /* Decisao minha: cliente inexistente e erro de formato. */
+        if (tipo != '*' &&
+            (cliente < 0 || cliente >= quantidade_de_clientes)) {
+            fprintf(stderr, ERRO_FORMATO_DO_ARQUIVO, ARQUIVO_COMMANDS);
+            fprintf(stderr, "  (linha %d: cliente %d nao existe; o %s declara "
+                            "%d clientes, de 0 a %d)\n",
+                    numero_da_linha, cliente, ARQUIVO_CUSTOMER,
+                    quantidade_de_clientes, quantidade_de_clientes - 1);
+            free(valores);
+            fclose(arquivo);
+            return -1;
+        }
+
+        comandos++;
+
+        /* Saida temporaria de conferencia, so desta sessao. */
+        if (tipo == '*') {
+            printf("  linha %d: * (imprimir o estado)\n", numero_da_linha);
+        } else {
+            printf("  linha %d: %s cliente %d, valores:", numero_da_linha,
+                   tipo == 'Q' ? "RQ" : "RL", cliente);
+            for (i = 0; i < quantidade_de_recursos; i++) {
+                printf(" %d", valores[i]);
+            }
+            printf("\n");
+        }
+    }
+
+    printf("comandos validados: %d\n", comandos);
+
+    free(valores);
+    fclose(arquivo);
+    return 0;
 }
 
 int main(int argc, char *argv[]) {
@@ -326,7 +582,15 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    /* TODO (sessao 3): ler o commands.txt. */
+    /* O commands.txt e validado inteiro aqui, antes de qualquer execucao:
+       nenhum comando roda enquanto o arquivo todo nao estiver aceito. */
+    if (validar_commands(quantidade_de_recursos,
+                         quantidade_de_clientes) != 0) {
+        free(maximum);
+        free(total_de_instancias);
+        return 1;
+    }
+
     /* TODO (sessao 4): allocation zerada e need = maximum - allocation. */
 
     /* Saida temporaria de conferencia: sai na Sessao 7, quando o
