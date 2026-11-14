@@ -298,3 +298,96 @@ codigo de saida: 0
 exit
 
 Script done on 2026-11-13 21:56:22-03:00 [COMMAND_EXIT_CODE="0"]
+Script started on 2026-11-14 13:33:53-03:00 [TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="155" LINES="18"]
+[?2004h]0;henrique@Lenovin: /mnt/c/Users/calad/dev/imp6/hac2[01;32mhenrique@Lenovin[00m:[01;34m/mnt/c/Users/calad/dev/imp6/hac2[00m$ cd /mnt/c/Users/calad/dev/imp6/hac2
+REF=/mnt/c/Users/calad/dev/imp6/referencia/result.txt
+echo "=== S4: ambiente ==="
+date; whoami; pwd
+echo "=== S4: compilacao do zero ==="
+make clean
+make
+echo "=== S4: execucao e saida gerada ==="
+./banker 10 5 7
+echo "codigo de saida: $?"
+cat -A result.txt
+echo "=== S4: cabecalho igual ao do professor, byte a byte ==="
+diff <(head -1 result.txt) <(sed -n '7p' "$REF") && echo "cabecalho identico"
+echo "=== S4: posicao das barras, o meu ==="
+awk 'NR<=2 { for (i=1;i<=length($0);i++) if (substr($0,i,1)=="|") printf "%d ", i; print "" }' result.txt
+echo "=== S4: posicao das barras, o do professor ==="
+awk 'NR>=7 && NR<=8 { for (i=1;i<=length($0);i++) if (substr($0,i,1)=="|") printf "%d ", i; print "" }' "$REF"
+echo "=== S4: diff contra a saida esperada do estado inicial ==="
+printf 'MAXIMUM   |   ALLOCATION  |   NEED\n7 5 3     |   0 0 0       |   7 5 3 \n3 2 2     |   0 0 0       |   3 2 2 \n9 0 2     |   0 0 0       |   9 0 2 \n2 2 2     |   0 0 0       |   2 2 2 \n4 3 3     |   0 0 0       |   4 3 3 \nAVAILABLE 10 5 7 \n' > /tmp/esperado-s4.txt diff result.txt /tmp/esperado-s4.txt && echo "saida identica a esperada"echo "codigo do diff: $?"echo "=== S4: regressao da S1, S2 e S3 ==="./banker 10 5echo "codigo de saida: $?"./banker 10 abc 7echo "codigo de saida: $?"echo "=== S4: casos limite em /tmp ==="rm -rf /tmp/teste-s4 && mkdir -p /tmp/teste-s4 && cd /tmp/teste-s4BANKER=/mnt/c/Users/calad/dev/imp6/hac2/banker[7mprintf '7,5,3\n3,2,2\n9,0,2\n2,2,2\n4,3,3' > customer.txt[27m[7mecho "=== S4: dois asteriscos, tabela duas vezes ==="[27m[7mprintf '*\n*' > commands.txt[27m[7m$BANKER 10 5 7[27m[7mcat -A result.txt[27m[7mecho "=== S4: nenhum asterisco, result.txt vazio ==="[27m[7mprintf 'RQ 0 1 1 1' > commands.txt[27m[7m$BANKER 10 5 7[27m[7mwc -c result.txt[27m[7mecho "=== S4: um cliente e um recurso ==="[27m[7mprintf '4' > customer.txt[27m[7mprintf '*' > commands.txt[27m[7m$BANKER 7[27m[7mcat -A result.txt[27m[7mcd /mnt/c/Users/calad/dev/imp6/hac2[27m[7mecho "=== S4: git ==="[27m[7mgit status --short[27m[7mexit[27mprintf '7,5,3\n3,2,2\n9,0,2\n2,2,2\n4,3,3' > customer.txtecho "=== S4: dois asteriscos, tabela duas vezes ==="printf '*\n*' > commands.txt$BANKER 10 5 7cat -A result.txtecho "=== S4: nenhum asterisco, result.txt vazio ==="printf 'RQ 0 1 1 1' > commands.txt$BANKER 10 5 7wc -c result.txtecho "=== S4: um cliente e um recurso ==="printf '4' > customer.txtprintf '*' > commands.txt$BANKER 7cat -A result.txtcd /mnt/c/Users/calad/dev/imp6/hac2echo "=== S4: git ==="git status --shortexit
+[?2004l=== S4: ambiente ===
+Sat Nov 14 13:33:56 -03 2026
+henrique
+/mnt/c/Users/calad/dev/imp6/hac2
+=== S4: compilacao do zero ===
+rm -f banker banker.exe
+gcc -Wall -Wextra -std=c11 -o banker banker.c
+=== S4: execucao e saida gerada ===
+recursos: 3
+available: 10 5 7
+clientes: 5
+codigo de saida: 0
+MAXIMUM   |   ALLOCATION  |   NEED$
+7 5 3     |   0 0 0       |   7 5 3 $
+3 2 2     |   0 0 0       |   3 2 2 $
+9 0 2     |   0 0 0       |   9 0 2 $
+2 2 2     |   0 0 0       |   2 2 2 $
+4 3 3     |   0 0 0       |   4 3 3 $
+AVAILABLE 10 5 7 $
+=== S4: cabecalho igual ao do professor, byte a byte ===
+cabecalho identico
+=== S4: posicao das barras, o meu ===
+11 27 
+11 27 
+=== S4: posicao das barras, o do professor ===
+11 27 
+11 27 
+=== S4: diff contra a saida esperada do estado inicial ===
+saida identica a esperada
+codigo do diff: 0
+=== S4: regressao da S1, S2 e S3 ===
+Erro: a quantidade de recursos informada na linha de comando e diferente da quantidade de recursos do arquivo customer.txt.
+  (linha 1 declara 3 valores, esperados 2)
+codigo de saida: 1
+Erro: argumento 2 ("abc") nao e um inteiro nao negativo valido.
+codigo de saida: 1
+=== S4: casos limite em /tmp ===
+=== S4: dois asteriscos, tabela duas vezes ===
+recursos: 3
+available: 10 5 7
+clientes: 5
+MAXIMUM   |   ALLOCATION  |   NEED$
+7 5 3     |   0 0 0       |   7 5 3 $
+3 2 2     |   0 0 0       |   3 2 2 $
+9 0 2     |   0 0 0       |   9 0 2 $
+2 2 2     |   0 0 0       |   2 2 2 $
+4 3 3     |   0 0 0       |   4 3 3 $
+AVAILABLE 10 5 7 $
+MAXIMUM   |   ALLOCATION  |   NEED$
+7 5 3     |   0 0 0       |   7 5 3 $
+3 2 2     |   0 0 0       |   3 2 2 $
+9 0 2     |   0 0 0       |   9 0 2 $
+2 2 2     |   0 0 0       |   2 2 2 $
+4 3 3     |   0 0 0       |   4 3 3 $
+AVAILABLE 10 5 7 $
+=== S4: nenhum asterisco, result.txt vazio ===
+recursos: 3
+available: 10 5 7
+clientes: 5
+0 result.txt
+=== S4: um cliente e um recurso ===
+recursos: 1
+available: 7
+clientes: 1
+MAXIMUM   |   ALLOCATION  |   NEED$
+4         |   0           |   4 $
+AVAILABLE 7 $
+=== S4: git ===
+ [31mM[m banker.c
+ [31mM[m evidencias.log
+exit
+
+Script done on 2026-11-14 13:33:57-03:00 [COMMAND_EXIT_CODE="0"]

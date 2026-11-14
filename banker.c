@@ -7,8 +7,11 @@
  *
  * Sessao 2: leitura do customer.txt e montagem da matriz maximum.
  *
- * Sessao 3: leitura e validacao do commands.txt. Esta sessao so valida:
- * a execucao dos comandos entra na Sessao 5.
+ * Sessao 3: leitura e validacao do commands.txt.
+ *
+ * Sessao 4: o estado do banco (allocation e available) e a execucao do
+ * comando "*", que imprime a tabela MAXIMUM | ALLOCATION | NEED no
+ * result.txt. RQ e RL ainda nao fazem nada: Sessoes 5, 6 e 7.
  *
  * Uso: ./banker <total_r0> <total_r1> ... <total_rN>
  */
@@ -22,6 +25,7 @@
 
 #define ARQUIVO_CUSTOMER "customer.txt"
 #define ARQUIVO_COMMANDS "commands.txt"
+#define ARQUIVO_RESULT   "result.txt"
 
 /* Os campos de uma linha do commands.txt sao separados por espaco, e nao
    por virgula como no customer.txt. A tabulacao entra na lista porque e o
@@ -32,6 +36,11 @@
    clientes nem a de recursos: essas duas continuam descobertas em tempo
    de execucao, como o enunciado exige. */
 #define TAMANHO_MAXIMO_DA_LINHA 1024
+
+/* Espaco para uma coluna da tabela: um numero e um espaco por recurso, mais o
+   terminador. Doze caracteres por valor sobram para qualquer int, inclusive
+   os dez digitos de INT_MAX. */
+#define TAMANHO_DA_COLUNA(recursos) ((size_t) (recursos) * 12 + 1)
 
 /* As duas mensagens de erro previstas no enunciado. O %s recebe o nome do
    arquivo: as mesmas duas mensagens valem para o customer.txt e para o
@@ -430,8 +439,6 @@ static int validar_commands(int quantidade_de_recursos,
     char linha[TAMANHO_MAXIMO_DA_LINHA];
     int *valores = NULL;
     int numero_da_linha = 0;
-    int comandos = 0;
-    int i;
 
     arquivo = fopen(ARQUIVO_COMMANDS, "r");
     if (arquivo == NULL) {
@@ -449,10 +456,6 @@ static int validar_commands(int quantidade_de_recursos,
         fclose(arquivo);
         return -1;
     }
-
-    /* Saida temporaria de conferencia: sai na Sessao 7, quando o result.txt
-       passa a ser a saida oficial. */
-    printf("comandos de %s:\n", ARQUIVO_COMMANDS);
 
     while (fgets(linha, TAMANHO_MAXIMO_DA_LINHA, arquivo) != NULL) {
         char tipo = 0;
@@ -518,22 +521,179 @@ static int validar_commands(int quantidade_de_recursos,
             return -1;
         }
 
-        comandos++;
-
-        /* Saida temporaria de conferencia, so desta sessao. */
-        if (tipo == '*') {
-            printf("  linha %d: * (imprimir o estado)\n", numero_da_linha);
-        } else {
-            printf("  linha %d: %s cliente %d, valores:", numero_da_linha,
-                   tipo == 'Q' ? "RQ" : "RL", cliente);
-            for (i = 0; i < quantidade_de_recursos; i++) {
-                printf(" %d", valores[i]);
-            }
-            printf("\n");
-        }
     }
 
-    printf("comandos validados: %d\n", comandos);
+    free(valores);
+    fclose(arquivo);
+    return 0;
+}
+
+/*
+ * Monta em destino uma coluna da tabela: os valores de um vetor, um por
+ * recurso, cada um seguido de um espaco.
+ *
+ * E por isso que toda coluna montada aqui termina com um espaco sobrando, e e
+ * dai que vem o espaco no fim das linhas de dados e da linha do AVAILABLE no
+ * result.txt do professor. O cabecalho nao passa por aqui, e por isso e a
+ * unica linha do arquivo que nao termina em espaco.
+ *
+ * sprintf devolve quantos caracteres escreveu, e e o que permite ir andando
+ * pelo buffer sem remedir o comprimento a cada valor. O chamador garante o
+ * tamanho com TAMANHO_DA_COLUNA.
+ */
+static void montar_coluna(char *destino, const int *valores,
+                          int quantidade_de_recursos) {
+    int posicao = 0;
+    int i;
+
+    destino[0] = '\0';
+    for (i = 0; i < quantidade_de_recursos; i++) {
+        posicao += sprintf(destino + posicao, "%d ", valores[i]);
+    }
+}
+
+/*
+ * Imprime a tabela do estado atual do banco: uma linha por cliente com
+ * maximum, allocation e need, e depois a linha do available.
+ *
+ * O formato foi medido byte a byte no result.txt do professor, porque o PDF
+ * colapsa os espacos: as barras caem nas colunas 11 e 27, no cabecalho e nas
+ * linhas de dados. "MAXIMUM" com %-10s ocupa dez colunas e poe a barra na 11;
+ * os tres espacos mais "ALLOCATION" com %-12s ocupam quinze e poem a proxima
+ * na 27. Cabecalho e dados saem do mesmo formato, o que e justamente o que faz
+ * as barras se alinharem.
+ *
+ * Limitacao conhecida (ambiguidade A4, que o professor nao respondeu): as
+ * larguras 10 e 12 vieram do exemplo com tres recursos. Com recursos demais as
+ * colunas estouram a largura e as barras deixam de se alinhar; %-10s nao
+ * trunca, entao nenhum valor se perde, so o alinhamento.
+ *
+ * need nao e guardado em lugar nenhum. need e sempre maximum - allocation, e
+ * uma matriz separada seria mais uma coisa para manter sincronizada e esquecer
+ * de atualizar em algum ponto; aqui ele e recalculado na hora.
+ */
+static void imprimir_estado(FILE *saida, const int *maximum,
+                            const int *allocation, const int *available,
+                            int quantidade_de_clientes,
+                            int quantidade_de_recursos) {
+    size_t tamanho_da_coluna = TAMANHO_DA_COLUNA(quantidade_de_recursos);
+    char *colunas = NULL;
+    char *coluna_maximum = NULL;
+    char *coluna_allocation = NULL;
+    char *coluna_need = NULL;
+    int *need = NULL;
+    int cliente;
+    int recurso;
+
+    /* Um malloc so para os tres buffers de texto, fatiado logo abaixo. */
+    colunas = malloc(3 * tamanho_da_coluna);
+    need = malloc((size_t) quantidade_de_recursos * sizeof(int));
+    if (colunas == NULL || need == NULL) {
+        fprintf(stderr, "Erro: falha ao alocar memoria para imprimir o "
+                        "estado do banco.\n");
+        free(colunas);
+        free(need);
+        return;
+    }
+
+    coluna_maximum = colunas;
+    coluna_allocation = colunas + tamanho_da_coluna;
+    coluna_need = colunas + 2 * tamanho_da_coluna;
+
+    fprintf(saida, "%-10s|   %-12s|   %s\n", "MAXIMUM", "ALLOCATION", "NEED");
+
+    for (cliente = 0; cliente < quantidade_de_clientes; cliente++) {
+        const int *maximum_do_cliente =
+            maximum + cliente * quantidade_de_recursos;
+        const int *allocation_do_cliente =
+            allocation + cliente * quantidade_de_recursos;
+
+        for (recurso = 0; recurso < quantidade_de_recursos; recurso++) {
+            need[recurso] = maximum_do_cliente[recurso] -
+                            allocation_do_cliente[recurso];
+        }
+
+        montar_coluna(coluna_maximum, maximum_do_cliente,
+                      quantidade_de_recursos);
+        montar_coluna(coluna_allocation, allocation_do_cliente,
+                      quantidade_de_recursos);
+        montar_coluna(coluna_need, need, quantidade_de_recursos);
+
+        fprintf(saida, "%-10s|   %-12s|   %s\n", coluna_maximum,
+                coluna_allocation, coluna_need);
+    }
+
+    /* A linha do available reaproveita um buffer que ja nao esta em uso. */
+    montar_coluna(coluna_maximum, available, quantidade_de_recursos);
+    fprintf(saida, "AVAILABLE %s\n", coluna_maximum);
+
+    free(colunas);
+    free(need);
+}
+
+/*
+ * Le o commands.txt de novo, agora executando cada comando e escrevendo o que
+ * sair em saida. Devolve 0 em caso de sucesso e -1 se nao der para ler o
+ * arquivo, ja tendo avisado no stderr.
+ *
+ * O arquivo e relido do zero em vez de guardado em memoria porque
+ * validar_commands ja passou por ele inteiro: a validacao termina antes de o
+ * primeiro comando rodar, e e so por isso que um erro na ultima linha nao
+ * deixa um result.txt pela metade.
+ *
+ * Nesta sessao so o "*" faz alguma coisa. RQ e RL sao reconhecidos e
+ * ignorados, entao o "*" do arquivo do professor ainda imprime o estado
+ * inicial: allocation zerada, need igual ao maximum, available igual aos
+ * argumentos da linha de comando.
+ */
+static int executar_comandos(FILE *saida, const int *maximum, int *allocation,
+                             int *available, int quantidade_de_clientes,
+                             int quantidade_de_recursos) {
+    FILE *arquivo = NULL;
+    char linha[TAMANHO_MAXIMO_DA_LINHA];
+    int *valores = NULL;
+
+    arquivo = fopen(ARQUIVO_COMMANDS, "r");
+    if (arquivo == NULL) {
+        fprintf(stderr, ERRO_FORMATO_DO_ARQUIVO, ARQUIVO_COMMANDS);
+        fprintf(stderr, "  (nao foi possivel abrir o arquivo)\n");
+        return -1;
+    }
+
+    valores = malloc((size_t) quantidade_de_recursos * sizeof(int));
+    if (valores == NULL) {
+        fprintf(stderr, "Erro: falha ao alocar memoria para %d recursos.\n",
+                quantidade_de_recursos);
+        fclose(arquivo);
+        return -1;
+    }
+
+    while (fgets(linha, TAMANHO_MAXIMO_DA_LINHA, arquivo) != NULL) {
+        char tipo = 0;
+        int cliente = 0;
+
+        remover_fim_de_linha(linha);
+        if (linha_em_branco(linha)) {
+            continue;
+        }
+
+        /* O mesmo parser da Sessao 3, sem um segundo jeito de entender uma
+           linha. Nenhuma linha reprova aqui: validar_commands ja aprovou o
+           arquivo inteiro, e a checagem fica so para nao executar lixo caso
+           alguem mexa na ordem das duas passadas. */
+        if (ler_comando(linha, &tipo, &cliente, valores,
+                        quantidade_de_recursos) != COMANDO_OK) {
+            continue;
+        }
+
+        if (tipo == '*') {
+            imprimir_estado(saida, maximum, allocation, available,
+                            quantidade_de_clientes, quantidade_de_recursos);
+        }
+
+        /* TODO (sessao 5): RL devolve ao banco o que o cliente libera. */
+        /* TODO (sessoes 6 e 7): RQ, o teste de seguranca e as mensagens. */
+    }
 
     free(valores);
     fclose(arquivo);
@@ -542,13 +702,19 @@ static int validar_commands(int quantidade_de_recursos,
 
 int main(int argc, char *argv[]) {
     /* Cada argumento depois do nome do programa e o total de instancias
-       de um recurso. */
+       de um recurso.
+
+       O vetor se chama available, e nao totais: ele comeca valendo os totais
+       e passa a valer o que o banco tem livre, diminuindo conforme aloca.
+       Os totais originais nao sao guardados em lugar nenhum porque nada
+       depende deles: o teto de cada cliente e o maximum, nao o total. */
     int quantidade_de_recursos = argc - 1;
-    int *total_de_instancias = NULL;
+    int *available = NULL;
     int *maximum = NULL;
+    int *allocation = NULL;
+    FILE *saida = NULL;
     int quantidade_de_clientes = 0;
     int i;
-    int j;
 
     if (quantidade_de_recursos < 1) {
         fprintf(stderr, "Uso: %s <total_recurso_0> [total_recurso_1] ...\n",
@@ -559,8 +725,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    total_de_instancias = malloc((size_t) quantidade_de_recursos * sizeof(int));
-    if (total_de_instancias == NULL) {
+    available = malloc((size_t) quantidade_de_recursos * sizeof(int));
+    if (available == NULL) {
         fprintf(stderr, "Erro: falha ao alocar memoria para %d recursos.\n",
                 quantidade_de_recursos);
         return 1;
@@ -568,17 +734,17 @@ int main(int argc, char *argv[]) {
 
     for (i = 0; i < quantidade_de_recursos; i++) {
         if (converter_inteiro_nao_negativo(argv[i + 1],
-                                           &total_de_instancias[i]) != 0) {
+                                           &available[i]) != 0) {
             fprintf(stderr, "Erro: argumento %d (\"%s\") nao e um inteiro "
                             "nao negativo valido.\n", i + 1, argv[i + 1]);
-            free(total_de_instancias);
+            free(available);
             return 1;
         }
     }
 
     maximum = ler_customer(quantidade_de_recursos, &quantidade_de_clientes);
     if (maximum == NULL) {
-        free(total_de_instancias);
+        free(available);
         return 1;
     }
 
@@ -587,32 +753,62 @@ int main(int argc, char *argv[]) {
     if (validar_commands(quantidade_de_recursos,
                          quantidade_de_clientes) != 0) {
         free(maximum);
-        free(total_de_instancias);
+        free(available);
         return 1;
     }
 
-    /* TODO (sessao 4): allocation zerada e need = maximum - allocation. */
+    /* allocation comeca zerada: antes do primeiro comando nenhum cliente tem
+       nada na mao. calloc ja zera, entao nao precisa de laco. Mesma forma do
+       maximum: um vetor unico de clientes * recursos, com a linha do cliente
+       i comecando em allocation + i * quantidade_de_recursos. */
+    allocation = calloc((size_t) quantidade_de_clientes *
+                        (size_t) quantidade_de_recursos, sizeof(int));
+    if (allocation == NULL) {
+        fprintf(stderr, "Erro: falha ao alocar memoria para %d clientes.\n",
+                quantidade_de_clientes);
+        free(maximum);
+        free(available);
+        return 1;
+    }
 
-    /* Saida temporaria de conferencia: sai na Sessao 7, quando o
-       result.txt passa a ser a saida oficial. */
+    /* "wb" e nao "w": no Windows o modo texto traduz cada '\n' em "\r\n", e o
+       result.txt sairia com CRLF, diferente byte a byte do arquivo do
+       professor mesmo com o conteudo certo. Em Linux o "b" nao faz nada, entao
+       a mesma linha serve nos dois lugares. */
+    saida = fopen(ARQUIVO_RESULT, "wb");
+    if (saida == NULL) {
+        fprintf(stderr, "Erro: nao foi possivel criar o arquivo %s.\n",
+                ARQUIVO_RESULT);
+        free(allocation);
+        free(maximum);
+        free(available);
+        return 1;
+    }
+
+    if (executar_comandos(saida, maximum, allocation, available,
+                          quantidade_de_clientes,
+                          quantidade_de_recursos) != 0) {
+        fclose(saida);
+        free(allocation);
+        free(maximum);
+        free(available);
+        return 1;
+    }
+
+    fclose(saida);
+
+    /* Saida temporaria de conferencia das Sessoes 1 e 2: sai na Sessao 7,
+       quando o result.txt for a unica saida do programa. */
     printf("recursos: %d\n", quantidade_de_recursos);
-    printf("total de instancias:");
+    printf("available:");
     for (i = 0; i < quantidade_de_recursos; i++) {
-        printf(" %d", total_de_instancias[i]);
+        printf(" %d", available[i]);
     }
     printf("\n");
-
     printf("clientes: %d\n", quantidade_de_clientes);
-    printf("maximum:\n");
-    for (i = 0; i < quantidade_de_clientes; i++) {
-        printf("  cliente %d:", i);
-        for (j = 0; j < quantidade_de_recursos; j++) {
-            printf(" %d", maximum[i * quantidade_de_recursos + j]);
-        }
-        printf("\n");
-    }
 
+    free(allocation);
     free(maximum);
-    free(total_de_instancias);
+    free(available);
     return 0;
 }
