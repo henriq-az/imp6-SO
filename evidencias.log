@@ -495,3 +495,116 @@ The resources 2 2 2 are not enough to customer 0 request 3 0 0 $
 exit
 
 Script done on 2026-11-14 15:16:08-03:00 [COMMAND_EXIT_CODE="0"]
+Script started on 2026-11-15 15:44:08-03:00 [TERM="xterm-256color" TTY="/dev/pts/1" COLUMNS="155" LINES="18"]
+[?2004h]0;henrique@Lenovin: /mnt/c/Users/calad/dev/imp6/hac2[01;32mhenrique@Lenovin[00m:[01;34m/mnt/c/Users/calad/dev/imp6/hac2[00m$ cd /mnt/c/Users/calad/dev/imp6/hac2
+REF=/mnt/c/Users/calad/dev/imp6/referencia/result.txt
+echo "=== S6: ambiente ==="
+date; whoami; pwd
+echo "=== S6: compilacao do zero ==="
+make clean
+make
+echo "=== S6: execucao com os arquivos do professor ==="
+./banker 10 5 7
+echo "codigo de saida: $?"
+echo "=== S6: contagem de linhas, meu e do professor ==="
+wc -l result.txt "$REF"
+echo "=== S6: diff completo, deve divergir numa linha so ==="
+diff result.txt "$REF"
+echo "codigo do diff: $?"
+echo "=== S6: linhas 1 a 15 devem bater ==="
+diff <(sed -n '1,15p' result.txt) <(sed -n '1,15p' "$REF") && echo "identicas"
+echo "=== S6: a tabela do asterisco deve bater inteira ==="
+diff <(sed -n '7,13p' result.txt) <(sed -n '7,13p' "$REF") && echo "tabela identica"echo "=== S6: a linha 17 deve bater ==="diff <(sed -n '17p' result.txt) <(sed -n '17p' "$REF") && echo "identicas"echo "=== S6: a linha de release, byte a byte ==="diff <(sed -n '5p' result.txt) <(sed -n '5p' "$REF") && echo "release identico"sed -n '5p' result.txt | cat -Aecho "=== S6: regressao ==="./banker 10 5echo "codigo de saida: $?"./banker 10 abc 7echo "codigo de saida: $?"echo "=== S6: casos limite em /tmp ==="rm -rf /tmp/teste-s6 && mkdir -p /tmp/teste-s6 && cd /tmp/teste-s6BANKER=/mnt/c/Users/calad/dev/imp6/hac2/bankerecho "=== S6: invariante, pedir e devolver o mesmo volta ao estado inicial ==="printf '3,3,3' > customer.txtprintf '*\nRQ 0 2 1 0\nRL 0 2 1 0\n*' > commands.txt$BANKER 5 5 5cat -A result.txtdiff <(sed -n '1,3p' result.txt) <(sed -n '6,8p' result.txt) && echo "as duas tabelas sao identicas"echo "=== S6: release de zero ==="printf 'RQ 0 1 1 1\nRL 0 0 0 0\n*' > commands.txt$BANKER 5 5 5cat -A result.txtecho "=== S6: release exato, devolve tudo que tem ==="[7mprintf 'RQ 0 3 3 3\nRL 0 3 3 3\n*' > commands.txt[27m[7m$BANKER 5 5 5[27m[7mcat -A result.txt[27m[7mecho "=== S6: release maior que o alocado, so o result.txt ==="[27m[7mprintf 'RQ 0 1 1 1\nRL 0 2 2 2\n*' > commands.txt[27m[7m$BANKER 5 5 5 2>/dev/null[27m[7mcat -A result.txt[27m[7mecho "=== S6: o mesmo caso, so o stderr ==="[27m[7m$BANKER 5 5 5 2>&1 >/dev/null[27m[7mecho "codigo de saida: $?"[27m[7mecho "=== S6: release de cliente que nunca alocou ==="[27m[7mprintf 'RL 0 1 0 0\n*' > commands.txt[27m[7m$BANKER 5 5 5 2>/dev/null[27m[7mcat -A result.txt[27m[7mcd /mnt/c/Users/calad/dev/imp6/hac2[27m[7mecho "=== S6: git ==="[27m[7mgit status --short[27m[7mexit[27mprintf 'RQ 0 3 3 3\nRL 0 3 3 3\n*' > commands.txt$BANKER 5 5 5cat -A result.txtecho "=== S6: release maior que o alocado, so o result.txt ==="printf 'RQ 0 1 1 1\nRL 0 2 2 2\n*' > commands.txt$BANKER 5 5 5 2>/dev/nullcat -A result.txtecho "=== S6: o mesmo caso, so o stderr ==="$BANKER 5 5 5 2>&1 >/dev/nullecho "codigo de saida: $?"echo "=== S6: release de cliente que nunca alocou ==="printf 'RL 0 1 0 0\n*' > commands.txt$BANKER 5 5 5 2>/dev/nullcat -A result.txtcd /mnt/c/Users/calad/dev/imp6/hac2echo "=== S6: git ==="git status --shortexit
+[?2004l=== S6: ambiente ===
+Sun Nov 15 15:44:12 -03 2026
+henrique
+/mnt/c/Users/calad/dev/imp6/hac2
+=== S6: compilacao do zero ===
+rm -f banker banker.exe
+gcc -Wall -Wextra -std=c11 -o banker banker.c
+=== S6: execucao com os arquivos do professor ===
+recursos: 3
+available: 2 1 0
+clientes: 5
+codigo de saida: 0
+=== S6: contagem de linhas, meu e do professor ===
+  17 result.txt
+  17 /mnt/c/Users/calad/dev/imp6/referencia/result.txt
+  34 total
+=== S6: diff completo, deve divergir numa linha so ===
+16c16
+< Allocate to customer 0 the resources 0 2 0
+---
+> The customer 0 request 0 2 0 was denied because result in an unsafe state
+codigo do diff: 1
+=== S6: linhas 1 a 15 devem bater ===
+identicas
+=== S6: a tabela do asterisco deve bater inteira ===
+tabela identica
+=== S6: a linha 17 deve bater ===
+identicas
+=== S6: a linha de release, byte a byte ===
+release identico
+Release from customer 0 the resources 0 1 1$
+=== S6: regressao ===
+Erro: a quantidade de recursos informada na linha de comando e diferente da quantidade de recursos do arquivo customer.txt.
+  (linha 1 declara 3 valores, esperados 2)
+codigo de saida: 1
+Erro: argumento 2 ("abc") nao e um inteiro nao negativo valido.
+codigo de saida: 1
+=== S6: casos limite em /tmp ===
+=== S6: invariante, pedir e devolver o mesmo volta ao estado inicial ===
+recursos: 3
+available: 5 5 5
+clientes: 1
+MAXIMUM   |   ALLOCATION  |   NEED$
+3 3 3     |   0 0 0       |   3 3 3 $
+AVAILABLE 5 5 5 $
+Allocate to customer 0 the resources 2 1 0$
+Release from customer 0 the resources 2 1 0$
+MAXIMUM   |   ALLOCATION  |   NEED$
+3 3 3     |   0 0 0       |   3 3 3 $
+AVAILABLE 5 5 5 $
+as duas tabelas sao identicas
+=== S6: release de zero ===
+recursos: 3
+available: 4 4 4
+clientes: 1
+Allocate to customer 0 the resources 1 1 1$
+Release from customer 0 the resources 0 0 0$
+MAXIMUM   |   ALLOCATION  |   NEED$
+3 3 3     |   1 1 1       |   2 2 2 $
+AVAILABLE 4 4 4 $
+=== S6: release exato, devolve tudo que tem ===
+recursos: 3
+available: 5 5 5
+clientes: 1
+Allocate to customer 0 the resources 3 3 3$
+Release from customer 0 the resources 3 3 3$
+MAXIMUM   |   ALLOCATION  |   NEED$
+3 3 3     |   0 0 0       |   3 3 3 $
+AVAILABLE 5 5 5 $
+=== S6: release maior que o alocado, so o result.txt ===
+recursos: 3
+available: 4 4 4
+clientes: 1
+Allocate to customer 0 the resources 1 1 1$
+MAXIMUM   |   ALLOCATION  |   NEED$
+3 3 3     |   1 1 1       |   2 2 2 $
+AVAILABLE 4 4 4 $
+=== S6: o mesmo caso, so o stderr ===
+Aviso: RL do cliente 0 ignorado: devolve 2 do recurso 0, mas tem so 1 alocado.
+codigo de saida: 0
+=== S6: release de cliente que nunca alocou ===
+recursos: 3
+available: 5 5 5
+clientes: 1
+MAXIMUM   |   ALLOCATION  |   NEED$
+3 3 3     |   0 0 0       |   3 3 3 $
+AVAILABLE 5 5 5 $
+=== S6: git ===
+ [31mM[m banker.c
+ [31mM[m evidencias.log
+exit
+
+Script done on 2026-11-15 15:44:12-03:00 [COMMAND_EXIT_CODE="0"]

@@ -15,8 +15,11 @@
  *
  * Sessao 5: a execucao do RQ -- as checagens do need e do available, as
  * mensagens de Allocate, exceed its maximum allocation e are not enough, e a
- * alteracao de allocation e available. O RL e a Sessao 6 e o algoritmo de
- * seguranca (result in an unsafe state) e a Sessao 7.
+ * alteracao de allocation e available.
+ *
+ * Sessao 6: a execucao do RL -- a devolucao de recursos ao banco, com aviso
+ * no stderr e o comando ignorado quando o cliente devolve mais do que tem.
+ * O algoritmo de seguranca (result in an unsafe state) e a Sessao 7.
  *
  * Uso: ./banker <total_r0> <total_r1> ... <total_rN>
  */
@@ -435,8 +438,8 @@ static int ler_comando(char *linha, char *tipo, int *cliente, int *valores,
  *   seria inventar uma regra.
  *
  * Um RL que libera mais do que o cliente tem alocado nao e erro de formato, e
- * erro de estado: so da para saber na hora de executar, e fica para a
- * Sessao 5.
+ * erro de estado: so da para saber na hora de executar, e e tratado em
+ * tratar_release (Sessao 6).
  */
 static int validar_commands(int quantidade_de_recursos,
                             int quantidade_de_clientes) {
@@ -763,6 +766,53 @@ static void tratar_request(FILE *saida, const int *maximum, int *allocation,
 }
 
 /*
+ * Executa um comando RL: o cliente devolve recursos ao banco.
+ *
+ * E o inverso do RQ, sem teste de seguranca: devolver nunca deixa o sistema
+ * menos seguro, entao basta allocation -= devolucao e available +=
+ * devolucao. A linha de saida usa o estilo sem espaco no fim, igual ao
+ * Allocate:
+ *
+ *   Release from customer 0 the resources 0 1 1
+ *
+ * Devolver mais do que tem (ambiguidade A8) nao esta coberto pelo enunciado.
+ * A decisao aqui e avisar no stderr, ignorar o comando e seguir:
+ *
+ * - encerrar com erro faria um RL ruim no meio do arquivo apagar todas as
+ *   linhas que viriam depois dele;
+ * - ajustar para zero corromperia o estado em silencio;
+ * - ignorando, o result.txt nao ganha nenhuma linha a mais, allocation e
+ *   available ficam como estavam, e quem roda o programa ve o aviso.
+ *
+ * A checagem roda inteira antes de qualquer alteracao, para que um RL que
+ * falha no ultimo recurso nao tenha devolvido os primeiros.
+ */
+static void tratar_release(FILE *saida, int *allocation, int *available,
+                           int cliente, const int *devolucao,
+                           int quantidade_de_recursos) {
+    int *linha = allocation + cliente * quantidade_de_recursos;
+    int i;
+
+    for (i = 0; i < quantidade_de_recursos; i++) {
+        if (devolucao[i] > linha[i]) {
+            fprintf(stderr, "Aviso: RL do cliente %d ignorado: devolve %d "
+                            "do recurso %d, mas tem so %d alocado.\n",
+                    cliente, devolucao[i], i, linha[i]);
+            return;
+        }
+    }
+
+    for (i = 0; i < quantidade_de_recursos; i++) {
+        linha[i] -= devolucao[i];
+        available[i] += devolucao[i];
+    }
+
+    fprintf(saida, "Release from customer %d the resources", cliente);
+    imprimir_lista(saida, devolucao, quantidade_de_recursos);
+    fprintf(saida, "\n");
+}
+
+/*
  * Le o commands.txt de novo, agora executando cada comando e escrevendo o que
  * sair em saida. Devolve 0 em caso de sucesso e -1 se nao der para ler o
  * arquivo, ja tendo avisado no stderr.
@@ -772,10 +822,9 @@ static void tratar_request(FILE *saida, const int *maximum, int *allocation,
  * primeiro comando rodar, e e so por isso que um erro na ultima linha nao
  * deixa um result.txt pela metade.
  *
- * Nesta sessao o "*" e o RQ fazem efeito; o RL ainda e reconhecido e
- * ignorado, e fica para a Sessao 6. Enquanto ele nao devolve nada ao banco, o
- * available fica menor do que devia a partir do "RL 0 0 1 1", e as linhas
- * seguintes do result.txt divergem da saida do professor por esse motivo.
+ * Os tres comandos fazem efeito. O que ainda falta e o teste de seguranca
+ * dentro do RQ (Sessao 7): sem ele, o "RQ 0 0 2 0" do arquivo do professor
+ * sai como Allocate em vez de denied, e essa e a unica linha que diverge.
  */
 static int executar_comandos(FILE *saida, const int *maximum, int *allocation,
                              int *available, int quantidade_de_clientes,
@@ -823,9 +872,11 @@ static int executar_comandos(FILE *saida, const int *maximum, int *allocation,
         } else if (tipo == 'Q') {
             tratar_request(saida, maximum, allocation, available, cliente,
                            valores, quantidade_de_recursos);
+        } else if (tipo == 'L') {
+            tratar_release(saida, allocation, available, cliente, valores,
+                           quantidade_de_recursos);
         }
 
-        /* TODO (sessao 6): RL devolve ao banco o que o cliente libera. */
         /* TODO (sessao 7): o teste de seguranca dentro de tratar_request. */
     }
 
