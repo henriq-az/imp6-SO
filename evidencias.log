@@ -608,3 +608,168 @@ AVAILABLE 5 5 5 $
 exit
 
 Script done on 2026-11-15 15:44:12-03:00 [COMMAND_EXIT_CODE="0"]
+Script started on 2026-11-15 16:55:29-03:00 [TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="161" LINES="18"]
+[?2004h]0;henrique@Lenovin: /mnt/c/Users/calad/dev/imp6/hac2[01;32mhenrique@Lenovin[00m:[01;34m/mnt/c/Users/calad/dev/imp6/hac2[00m$ cd /mnt/c/Users/calad/dev/imp6/hac2
+REF=/mnt/c/Users/calad/dev/imp6/referencia/result.txt
+echo "=== S7: ambiente ==="
+date; whoami; pwd
+echo "=== S7: compilacao do zero ==="
+make clean
+make
+echo "=== S7: execucao com os arquivos do professor ==="
+./banker 10 5 7
+echo "codigo de saida: $?"
+echo "=== S7: stdout deve estar vazio agora ==="
+./banker 10 5 7 2>/dev/null | wc -c
+echo "=== S7: DIFF COMPLETO, deve ser vazio ==="
+diff result.txt "$REF" && echo "SAIDA IDENTICA AO ARQUIVO DO PROFESSOR"
+echo "codigo do diff: $?"
+echo "=== S7: as duas linhas que dependem da seguranca ==="
+sed -n '15,16p' result.txt
+echo "=== S7: resultado final ==="
+cat result.txtecho "=== S7: regressao ==="./banker 10 5echo "codigo de saida: $?"./banker 10 abc 7echo "codigo de saida: $?"echo "=== S7: casos limite em /tmp ==="rm -rf /tmp/teste-s7 && mkdir -p /tmp/teste-s7 && cd /tmp/teste-s7BANKER=/mnt/c/Users/calad/dev/imp6/hac2/bankerecho "=== S7: inseguro minimo, um cliente e um recurso ==="printf '5' > customer.txtprintf 'RQ 0 3\n*' > commands.txt$BANKER 3cat result.txtecho "=== S7: seguro na fronteira, sobra exatamente o need ==="$BANKER 5cat result.txtecho "=== S7: dois clientes travando um ao outro ==="[7mprintf '3\n3' > customer.txt[27m[7mprintf 'RQ 0 2\nRQ 1 2\n*' > commands.txt[27m[7m$BANKER 4[27m[7mcat result.txt[27m[7mecho "=== S7: need zerado e sempre seguro ==="[27m[7mprintf '2\n2' > customer.txt[27m[7mprintf 'RQ 0 2\nRQ 1 2\n*' > commands.txt[27m[7m$BANKER 4[27m[7mcat result.txt[27m[7mecho "=== S7: pedido de zero nao muda a seguranca ==="[27m[7mprintf '5\n5' > customer.txt[27m[7mprintf 'RQ 0 0\n*' > commands.txt[27m[7m$BANKER 4[27m[7mcat result.txt[27m[7mcd /mnt/c/Users/calad/dev/imp6/hac2[27m[7mecho "=== S7: git ==="[27m[7mgit status --short[27m[7mexit[27mprintf '3\n3' > customer.txtprintf 'RQ 0 2\nRQ 1 2\n*' > commands.txt$BANKER 4cat result.txtecho "=== S7: need zerado e sempre seguro ==="printf '2\n2' > customer.txtprintf 'RQ 0 2\nRQ 1 2\n*' > commands.txt$BANKER 4cat result.txtecho "=== S7: pedido de zero nao muda a seguranca ==="printf '5\n5' > customer.txtprintf 'RQ 0 0\n*' > commands.txt$BANKER 4cat result.txtcd /mnt/c/Users/calad/dev/imp6/hac2echo "=== S7: git ==="git status --shortexit
+[?2004l=== S7: ambiente ===
+Sun Nov 15 16:55:32 -03 2026
+henrique
+/mnt/c/Users/calad/dev/imp6/hac2
+=== S7: compilacao do zero ===
+rm -f banker banker.exe
+gcc -Wall -Wextra -std=c11 -o banker banker.c
+=== S7: execucao com os arquivos do professor ===
+recursos: 3
+available: 2 3 0
+clientes: 5
+codigo de saida: 0
+=== S7: stdout deve estar vazio agora ===
+41
+=== S7: DIFF COMPLETO, deve ser vazio ===
+SAIDA IDENTICA AO ARQUIVO DO PROFESSOR
+codigo do diff: 0
+=== S7: as duas linhas que dependem da seguranca ===
+Allocate to customer 1 the resources 1 0 2
+The customer 0 request 0 2 0 was denied because result in an unsafe state
+=== S7: resultado final ===
+Allocate to customer 0 the resources 0 2 1
+Allocate to customer 2 the resources 3 0 2
+Allocate to customer 1 the resources 2 0 0
+Allocate to customer 4 the resources 0 0 2
+Release from customer 0 the resources 0 1 1
+Allocate to customer 3 the resources 2 1 1
+MAXIMUM   |   ALLOCATION  |   NEED
+7 5 3     |   0 1 0       |   7 4 3 
+3 2 2     |   2 0 0       |   1 2 2 
+9 0 2     |   3 0 2       |   6 0 0 
+2 2 2     |   2 1 1       |   0 1 1 
+4 3 3     |   0 0 2       |   4 3 1 
+AVAILABLE 3 3 2 
+The resources 3 3 2 are not enough to customer 4 request 4 0 0 
+Allocate to customer 1 the resources 1 0 2
+The customer 0 request 0 2 0 was denied because result in an unsafe state
+The customer 2 request 0 1 0 was denied because exceed its maximum allocation
+=== S7: regressao ===
+Erro: a quantidade de recursos informada na linha de comando e diferente da quantidade de recursos do arquivo customer.txt.
+  (linha 1 declara 3 valores, esperados 2)
+codigo de saida: 1
+Erro: argumento 2 ("abc") nao e um inteiro nao negativo valido.
+codigo de saida: 1
+=== S7: casos limite em /tmp ===
+=== S7: inseguro minimo, um cliente e um recurso ===
+recursos: 1
+available: 3
+clientes: 1
+The customer 0 request 3 was denied because result in an unsafe state
+MAXIMUM   |   ALLOCATION  |   NEED
+5         |   0           |   5 
+AVAILABLE 3 
+=== S7: seguro na fronteira, sobra exatamente o need ===
+recursos: 1
+available: 2
+clientes: 1
+Allocate to customer 0 the resources 3
+MAXIMUM   |   ALLOCATION  |   NEED
+5         |   3           |   2 
+AVAILABLE 2 
+=== S7: dois clientes travando um ao outro ===
+recursos: 1
+available: 2
+clientes: 2
+Allocate to customer 0 the resources 2
+The customer 1 request 2 was denied because result in an unsafe state
+MAXIMUM   |   ALLOCATION  |   NEED
+3         |   2           |   1 
+3         |   0           |   3 
+AVAILABLE 2 
+=== S7: need zerado e sempre seguro ===
+recursos: 1
+available: 0
+clientes: 2
+Allocate to customer 0 the resources 2
+Allocate to customer 1 the resources 2
+MAXIMUM   |   ALLOCATION  |   NEED
+2         |   2           |   0 
+2         |   2           |   0 
+AVAILABLE 0 
+=== S7: pedido de zero nao muda a seguranca ===
+recursos: 1
+available: 4
+clientes: 2
+The customer 0 request 0 was denied because result in an unsafe state
+MAXIMUM   |   ALLOCATION  |   NEED
+5         |   0           |   5 
+5         |   0           |   5 
+AVAILABLE 4 
+=== S7: git ===
+ [31mM[m banker.c
+ [31mM[m evidencias.log
+exit
+
+Script done on 2026-11-15 16:55:32-03:00 [COMMAND_EXIT_CODE="0"]
+Script started on 2026-11-15 16:59:37-03:00 [TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="161" LINES="18"]
+[?2004h]0;henrique@Lenovin: /mnt/c/Users/calad/dev/imp6/hac2[01;32mhenrique@Lenovin[00m:[01;34m/mnt/c/Users/calad/dev/imp6/hac2[00m$ [7mcd /tmp/teste-s7[27m
+[7mBANKER=/mnt/c/Users/calad/dev/imp6/hac2/banker[27m
+[7mecho "=== S7: pedido de zero em estado seguro ==="[27m
+[7mprintf '2\n2' > customer.txt[27m
+[7mprintf 'RQ 0 0\n*' > commands.txt[27m
+[7m$BANKER 4[27m
+[7mcat result.txt[27m
+[7mecho "=== S7: pedido de zero em estado que ja era inseguro ==="[27m
+[7mprintf '5\n5' > customer.txt[27m
+[7mprintf 'RQ 0 0\n*' > commands.txt[27m
+[7m$BANKER 4[27m
+[7mcat result.txt[27m
+[7mcd /mnt/c/Users/calad/dev/imp6/hac2[27m
+[7mexit[27m[A[A[A[A[A[A[A[A[A[A[A[A[A]0;henrique@Lenovin: /mnt/c/Users/calad/dev/imp6/hac2[01;32mhenrique@Lenovin[00m:[01;34m/mnt/c/Users/calad/dev/imp6/hac2[00m$ cd /tmp/teste-s7
+BANKER=/mnt/c/Users/calad/dev/imp6/hac2/banker
+echo "=== S7: pedido de zero em estado seguro ==="
+printf '2\n2' > customer.txt
+printf 'RQ 0 0\n*' > commands.txt
+$BANKER 4
+cat result.txt
+echo "=== S7: pedido de zero em estado que ja era inseguro ==="
+printf '5\n5' > customer.txt
+printf 'RQ 0 0\n*' > commands.txt
+$BANKER 4
+cat result.txt
+cd /mnt/c/Users/calad/dev/imp6/hac2
+exit
+[?2004l=== S7: pedido de zero em estado seguro ===
+recursos: 1
+available: 4
+clientes: 2
+Allocate to customer 0 the resources 0
+MAXIMUM   |   ALLOCATION  |   NEED
+2         |   0           |   2 
+2         |   0           |   2 
+AVAILABLE 4 
+=== S7: pedido de zero em estado que ja era inseguro ===
+recursos: 1
+available: 4
+clientes: 2
+The customer 0 request 0 was denied because result in an unsafe state
+MAXIMUM   |   ALLOCATION  |   NEED
+5         |   0           |   5 
+5         |   0           |   5 
+AVAILABLE 4 
+exit
+
+Script done on 2026-11-15 16:59:39-03:00 [COMMAND_EXIT_CODE="0"]

@@ -19,7 +19,9 @@
  *
  * Sessao 6: a execucao do RL -- a devolucao de recursos ao banco, com aviso
  * no stderr e o comando ignorado quando o cliente devolve mais do que tem.
- * O algoritmo de seguranca (result in an unsafe state) e a Sessao 7.
+ *
+ * Sessao 7: o algoritmo de seguranca dentro do RQ -- alocacao provisoria,
+ * teste do estado resultante e a mensagem result in an unsafe state.
  *
  * Uso: ./banker <total_r0> <total_r1> ... <total_rN>
  */
@@ -685,6 +687,90 @@ static void imprimir_lista_com_espaco_no_fim(FILE *saida, const int *valores,
 }
 
 /*
+ * O algoritmo de seguranca. Devolve 1 se o estado (maximum, allocation,
+ * available) e seguro e 0 se e inseguro.
+ *
+ * Um estado e seguro se existe alguma ordem em que todos os clientes
+ * conseguem terminar: receber o que ainda falta para o maximo (o need) e
+ * devolver tudo o que tem. O teste e uma simulacao otimista:
+ *
+ *   1. work comeca como copia do available; ninguem terminou;
+ *   2. procura um cliente que nao terminou e cujo need cabe inteiro em work;
+ *   3. achou: work += allocation dele, marca como terminado, volta ao 2;
+ *   4. nao achou: seguro se todos terminaram, inseguro se sobrou alguem.
+ *
+ * A ordem da busca no passo 2 nao importa: um cliente que termina so
+ * acrescenta recursos ao work, nunca tira, entao escolher qualquer um que
+ * caiba nunca estraga uma ordem que funcionaria. Por isso a varredura
+ * ingenua de 0 a N-1, repetida enquanto alguem terminar, da a resposta certa.
+ *
+ * allocation e available nao sao alterados: work e a unica copia, e o need
+ * e calculado na hora como maximum - allocation. Quem chama ja fez a
+ * alocacao provisoria, entao o need visto aqui e o do estado hipotetico.
+ *
+ * Se faltar memoria para a simulacao, avisa no stderr e responde inseguro:
+ * negar um pedido e o erro que nao corrompe nada.
+ */
+static int estado_seguro(const int *maximum, const int *allocation,
+                         const int *available, int quantidade_de_clientes,
+                         int quantidade_de_recursos) {
+    int *work = NULL;
+    char *terminou = NULL;
+    int progrediu = 1;
+    int terminados = 0;
+    int cliente;
+    int i;
+
+    work = malloc((size_t) quantidade_de_recursos * sizeof(int));
+    terminou = calloc((size_t) quantidade_de_clientes, sizeof(char));
+    if (work == NULL || terminou == NULL) {
+        fprintf(stderr, "Erro: falha ao alocar memoria para o teste de "
+                        "seguranca; o pedido sera negado.\n");
+        free(work);
+        free(terminou);
+        return 0;
+    }
+
+    for (i = 0; i < quantidade_de_recursos; i++) {
+        work[i] = available[i];
+    }
+
+    while (progrediu) {
+        progrediu = 0;
+        for (cliente = 0; cliente < quantidade_de_clientes; cliente++) {
+            const int *maximo = maximum + cliente * quantidade_de_recursos;
+            const int *linha = allocation + cliente * quantidade_de_recursos;
+            int cabe = 1;
+
+            if (terminou[cliente]) {
+                continue;
+            }
+
+            for (i = 0; i < quantidade_de_recursos; i++) {
+                if (maximo[i] - linha[i] > work[i]) {
+                    cabe = 0;
+                    break;
+                }
+            }
+
+            if (cabe) {
+                /* Ele termina e devolve o que TEM (allocation), nao o need. */
+                for (i = 0; i < quantidade_de_recursos; i++) {
+                    work[i] += linha[i];
+                }
+                terminou[cliente] = 1;
+                terminados++;
+                progrediu = 1;
+            }
+        }
+    }
+
+    free(work);
+    free(terminou);
+    return terminados == quantidade_de_clientes;
+}
+
+/*
  * Executa um comando RQ: o cliente pede recursos ao banco.
  *
  * O pedido passa por tres perguntas, nesta ordem:
@@ -705,12 +791,13 @@ static void imprimir_lista_com_espaco_no_fim(FILE *saida, const int *valores,
  * exceed its maximum allocation. Logo a checagem do need roda antes da
  * checagem do available; na ordem inversa essa linha sairia errada.
  *
- * A pergunta 3 e o algoritmo de seguranca, e fica para a Sessao 7: por
- * enquanto todo pedido que passa pelas duas primeiras e alocado, e o
- * "RQ 0 0 2 0" do arquivo do professor sai como Allocate em vez de denied.
+ * A pergunta 3 e o algoritmo de seguranca (estado_seguro). O pedido e
+ * alocado provisoriamente, o estado resultante e testado, e se ele for
+ * inseguro a alocacao e desfeita antes de imprimir o denied.
  */
 static void tratar_request(FILE *saida, const int *maximum, int *allocation,
                            int *available, int cliente, const int *pedido,
+                           int quantidade_de_clientes,
                            int quantidade_de_recursos) {
     /* Os dois ponteiros existem so para nao repetir
        allocation[cliente * quantidade_de_recursos + i] em cada comparacao. */
@@ -745,21 +832,30 @@ static void tratar_request(FILE *saida, const int *maximum, int *allocation,
         }
     }
 
-    /* TODO (sessao 7): 3) o teste de seguranca entra aqui. Se alocar levar o
-       sistema a um estado inseguro, imprimir
-
-         The customer <i> request <pedido> was denied because result in an
-         unsafe state
-
-       (estilo sem espaco no fim, igual ao do exceed) e retornar sem alterar
-       allocation nem available. */
-
-    /* Passou pelas checagens: o banco entrega os recursos. */
+    /* 3) Alocacao provisoria: o teste de seguranca e sobre o estado DEPOIS
+          do pedido, entao o pedido entra em allocation e sai de available
+          antes de perguntar. */
     for (i = 0; i < quantidade_de_recursos; i++) {
         linha[i] += pedido[i];
         available[i] -= pedido[i];
     }
 
+    if (!estado_seguro(maximum, allocation, available, quantidade_de_clientes,
+                       quantidade_de_recursos)) {
+        /* Inseguro: desfaz a alocacao provisoria, e o estado volta a ser
+           exatamente o de antes do pedido. */
+        for (i = 0; i < quantidade_de_recursos; i++) {
+            linha[i] -= pedido[i];
+            available[i] += pedido[i];
+        }
+
+        fprintf(saida, "The customer %d request", cliente);
+        imprimir_lista(saida, pedido, quantidade_de_recursos);
+        fprintf(saida, " was denied because result in an unsafe state\n");
+        return;
+    }
+
+    /* Seguro: a alocacao provisoria vira definitiva. */
     fprintf(saida, "Allocate to customer %d the resources", cliente);
     imprimir_lista(saida, pedido, quantidade_de_recursos);
     fprintf(saida, "\n");
@@ -822,9 +918,6 @@ static void tratar_release(FILE *saida, int *allocation, int *available,
  * primeiro comando rodar, e e so por isso que um erro na ultima linha nao
  * deixa um result.txt pela metade.
  *
- * Os tres comandos fazem efeito. O que ainda falta e o teste de seguranca
- * dentro do RQ (Sessao 7): sem ele, o "RQ 0 0 2 0" do arquivo do professor
- * sai como Allocate em vez de denied, e essa e a unica linha que diverge.
  */
 static int executar_comandos(FILE *saida, const int *maximum, int *allocation,
                              int *available, int quantidade_de_clientes,
@@ -871,13 +964,12 @@ static int executar_comandos(FILE *saida, const int *maximum, int *allocation,
                             quantidade_de_clientes, quantidade_de_recursos);
         } else if (tipo == 'Q') {
             tratar_request(saida, maximum, allocation, available, cliente,
-                           valores, quantidade_de_recursos);
+                           valores, quantidade_de_clientes,
+                           quantidade_de_recursos);
         } else if (tipo == 'L') {
             tratar_release(saida, allocation, available, cliente, valores,
                            quantidade_de_recursos);
         }
-
-        /* TODO (sessao 7): o teste de seguranca dentro de tratar_request. */
     }
 
     free(valores);
