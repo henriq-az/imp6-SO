@@ -1228,3 +1228,102 @@ gcc -Wall -Wextra -std=c11 -o banker banker.c
 exit
 
 Script done on 2026-11-16 10:43:34-03:00 [COMMAND_EXIT_CODE="0"]
+Script started on 2026-11-16 11:03:53-03:00 [TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="161" LINES="18"]
+[?2004h]0;henrique@Lenovin: /mnt/c/Users/calad/dev/imp6/hac2[01;32mhenrique@Lenovin[00m:[01;34m/mnt/c/Users/calad/dev/imp6/hac2[00m$ cd /mnt/c/Users/calad/dev/imp6/hac2
+REF=/mnt/c/Users/calad/dev/imp6/referencia/result.txt
+echo "=== S11: ambiente ==="
+date; whoami; pwd
+uname -a
+head -2 /etc/os-release
+gcc --version | head -1
+make --version | head -1
+echo "=== S11: compilacao do zero ==="
+make clean
+ls -l banker
+echo "codigo do ls: $? (2 significa que o clean apagou mesmo)"
+make
+ls -l banker
+echo "=== S11: o Makefile confere com o que o enunciado pede ==="
+grep -n -E '^(all|banker|clean):' Makefile
+grep -n 'Wall' Makefile
+echo "=== S11: nao existe quantidade fixa de clientes nem de recursos ==="
+grep -n '#define' banker.cgrep -n -E 'NUMBER_OF_CUSTOMERS|NUMBER_OF_RESOURCES' banker.cecho "codigo do grep: $? (1 significa que nao existe)"printf 'int NUMBER_OF_CUSTOMERS = 5;\n' > /tmp/controle1.cgrep -n -E 'NUMBER_OF_CUSTOMERS|NUMBER_OF_RESOURCES' /tmp/controle1.cecho "controle positivo, codigo: $? (0 significa que o grep funciona)"echo "=== S11: as dimensoes vem de alocacao dinamica ==="grep -c -E 'malloc|calloc' banker.cecho "=== S11: os tres nomes de arquivo do enunciado ==="grep -n -E '"(customer|commands|result)\.txt"' banker.cecho "=== S11: nenhum printf para stdout sobrou ==="grep -n -E '\bprintf *\(' banker.cecho "codigo do grep: $? (1 significa que nao sobrou nenhum)"printf 'printf("x");\nfprintf(f, "y");\nsprintf(b, "z");\n' > /tmp/controle2.cgrep -n -E '\bprintf *\(' /tmp/controle2.cecho "controle positivo, codigo: $? (tem que achar so a linha 1, nao a 2 nem a 3)"echo "=== S11: caso base ==="./banker 10 5 7echo "codigo de saida: $?"./banker 10 5 7 2>/dev/null | wc -cdiff result.txt "$REF" && echo "SAIDA IDENTICA AO ARQUIVO DO PROFESSOR"echo "=== S11: casos invalidos ==="./banker 10 5echo "codigo de saida: $?"rm -f result.txt./banker 10 5 >/dev/null 2>&1ls result.txtecho "codigo do ls: $? (2 significa que o run invalido nao criou a saida)"rm -rf /tmp/s11-vazio && mkdir -p /tmp/s11-vazio && cd /tmp/s11-vazio/mnt/c/Users/calad/dev/imp6/hac2/banker 10 5 7echo "codigo de saida: $?"cd /mnt/c/Users/calad/dev/imp6/hac2[7mecho "=== S11: cem execucoes repetidas ==="[27m[7mfalhas=0[27m[7mfor i in $(seq 1 100); do[27m[7m    ./banker 10 5 7 2>/dev/null[27m[7m    if [ $? -ne 0 ]; then falhas=$((falhas+1)); fi[27m[7m    if ! diff -q result.txt "$REF" >/dev/null; then falhas=$((falhas+1)); fi[27m[7mdone[27m[7mecho "rodadas: 100, falhas: $falhas"[27m[7mecho "=== S11: dez execucoes com sanitizer ==="[27m[7mgcc -Wall -Wextra -std=c11 -g -fsanitize=address,undefined -o /tmp/banker-asan banker.c[27m[7mecho "codigo da compilacao: $?"[27m[7mfor i in $(seq 1 10); do /tmp/banker-asan 10 5 7; done[27m[7mecho "codigo de saida da ultima: $?"[27m[7mdiff result.txt "$REF" && echo "saida ainda identica depois das rodadas com sanitizer"[27m[7mecho "=== S11: estado final do repositorio ==="[27m[7mgit status --short[27m[7mgit log --oneline[27m[7mexit[27mecho "=== S11: cem execucoes repetidas ==="falhas=0for i in $(seq 1 100); do    ./banker 10 5 7 2>/dev/null    if [ $? -ne 0 ]; then falhas=$((falhas+1)); fi    if ! diff -q result.txt "$REF" >/dev/null; then falhas=$((falhas+1)); fidoneecho "rodadas: 100, falhas: $falhas"echo "=== S11: dez execucoes com sanitizer ==="gcc -Wall -Wextra -std=c11 -g -fsanitize=address,undefined -o /tmp/banker-asan banker.cecho "codigo da compilacao: $?"for i in $(seq 1 10); do /tmp/banker-asan 10 5 7; doneecho "codigo de saida da ultima: $?"diff result.txt "$REF" && echo "saida ainda identica depois das rodadas com sanitizer"echo "=== S11: estado final do repositorio ==="git status --shortgit log --onelineexit
+[?2004l=== S11: ambiente ===
+Mon Nov 16 11:03:57 -03 2026
+henrique
+/mnt/c/Users/calad/dev/imp6/hac2
+Linux Lenovin 6.6.87.2-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Thu Jun  5 18:31:42 UTC 2025 aarch64 aarch64 aarch64 GNU/Linux
+PRETTY_NAME="Ubuntu 24.04.3 LTS"
+NAME="Ubuntu"
+gcc (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0
+GNU Make 4.3
+=== S11: compilacao do zero ===
+rm -f banker banker.exe
+ls: cannot access 'banker': No such file or directory
+codigo do ls: 2 (2 significa que o clean apagou mesmo)
+gcc -Wall -Wextra -std=c11 -o banker banker.c
+-rwxrwxrwx 1 henrique henrique 72008 Nov 16 11:03 [0m[01;32mbanker[0m
+=== S11: o Makefile confere com o que o enunciado pede ===
+[32m[K4[m[K[36m[K:[m[K[01;31m[Kall:[m[K banker
+[32m[K6[m[K[36m[K:[m[K[01;31m[Kbanker:[m[K banker.c
+[32m[K9[m[K[36m[K:[m[K[01;31m[Kclean:[m[K
+[32m[K2[m[K[36m[K:[m[KCFLAGS = -[01;31m[KWall[m[K -Wextra -std=c11
+=== S11: nao existe quantidade fixa de clientes nem de recursos ===
+[32m[K44[m[K[36m[K:[m[K[01;31m[K#define[m[K ARQUIVO_CUSTOMER "customer.txt"
+[32m[K45[m[K[36m[K:[m[K[01;31m[K#define[m[K ARQUIVO_COMMANDS "commands.txt"
+[32m[K46[m[K[36m[K:[m[K[01;31m[K#define[m[K ARQUIVO_RESULT   "result.txt"
+[32m[K51[m[K[36m[K:[m[K[01;31m[K#define[m[K SEPARADORES_DO_COMANDO " \t"
+[32m[K56[m[K[36m[K:[m[K[01;31m[K#define[m[K TAMANHO_MAXIMO_DA_LINHA 1024
+[32m[K61[m[K[36m[K:[m[K[01;31m[K#define[m[K TAMANHO_DA_COLUNA(recursos) ((size_t) (recursos) * 12 + 1)
+[32m[K67[m[K[36m[K:[m[K[01;31m[K#define[m[K ERRO_QUANTIDADE_DE_RECURSOS                                          \
+[32m[K70[m[K[36m[K:[m[K[01;31m[K#define[m[K ERRO_FORMATO_DO_ARQUIVO                                              \
+[32m[K76[m[K[36m[K:[m[K[01;31m[K#define[m[K COMANDO_OK 0
+[32m[K77[m[K[36m[K:[m[K[01;31m[K#define[m[K COMANDO_FORMATO_INVALIDO (-1)
+[32m[K78[m[K[36m[K:[m[K[01;31m[K#define[m[K COMANDO_QUANTIDADE_INVALIDA (-2)
+codigo do grep: 1 (1 significa que nao existe)
+[32m[K1[m[K[36m[K:[m[Kint [01;31m[KNUMBER_OF_CUSTOMERS[m[K = 5;
+controle positivo, codigo: 0 (0 significa que o grep funciona)
+=== S11: as dimensoes vem de alocacao dinamica ===
+13
+=== S11: os tres nomes de arquivo do enunciado ===
+[32m[K44[m[K[36m[K:[m[K#define ARQUIVO_CUSTOMER [01;31m[K"customer.txt"[m[K
+[32m[K45[m[K[36m[K:[m[K#define ARQUIVO_COMMANDS [01;31m[K"commands.txt"[m[K
+[32m[K46[m[K[36m[K:[m[K#define ARQUIVO_RESULT   [01;31m[K"result.txt"[m[K
+=== S11: nenhum printf para stdout sobrou ===
+codigo do grep: 1 (1 significa que nao sobrou nenhum)
+[32m[K1[m[K[36m[K:[m[K[01;31m[Kprintf([m[K"x");
+controle positivo, codigo: 0 (tem que achar so a linha 1, nao a 2 nem a 3)
+=== S11: caso base ===
+codigo de saida: 0
+0
+SAIDA IDENTICA AO ARQUIVO DO PROFESSOR
+=== S11: casos invalidos ===
+Erro: a quantidade de recursos informada na linha de comando e diferente da quantidade de recursos do arquivo customer.txt.
+  (linha 1 declara 3 valores, esperados 2)
+codigo de saida: 1
+ls: cannot access 'result.txt': No such file or directory
+codigo do ls: 2 (2 significa que o run invalido nao criou a saida)
+Erro: o arquivo customer.txt nao esta no formato indicado.
+  (nao foi possivel abrir o arquivo: No such file or directory)
+codigo de saida: 1
+=== S11: cem execucoes repetidas ===
+rodadas: 100, falhas: 0
+=== S11: dez execucoes com sanitizer ===
+codigo da compilacao: 0
+codigo de saida da ultima: 0
+saida ainda identica depois das rodadas com sanitizer
+=== S11: estado final do repositorio ===
+ [31mM[m evidencias.log
+[?1h=[33mbf84739[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m README.md[m
+[33mecf489f[m testes de caso limite e invalido[m
+[33m28dd9cc[m tratamento de erro dos dois casos de liberacao de memoria[m
+[33m1d5ba65[m algoritmo de seguranca e alocacao[m
+[33mad23706[m comando RL e linha de release[m
+[33m2a7c94f[m comando RQ com checagem de need, available e alocacao[m
+[33m54c5be2[m estado do banco e saida do comando[m
+[33m195c668[m leitura e validacao do commands.txt[m
+[33m57795c3[m leitura e validacao do customer.txt[m
+[33m60a4ddf[m estrutura inicial, Makefile e main[m
+[K[?1l>exit
+
+Script done on 2026-11-16 11:04:04-03:00 [COMMAND_EXIT_CODE="0"]
