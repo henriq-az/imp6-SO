@@ -27,6 +27,10 @@
  * erro e aviso no stderr, result.txt aberto so depois de toda a validacao, e
  * cada saida de erro liberando o que ja tinha sido alocado.
  *
+ * Sessao 9: casos de borda nao cobertos antes -- erro de leitura separado de
+ * erro de abertura (diretorio no lugar do arquivo), o motivo do sistema nas
+ * mensagens, e a mesma forma de numero nas tres entradas.
+ *
  * Uso: ./banker <total_r0> <total_r1> ... <total_rN>
  */
 
@@ -74,6 +78,25 @@
 #define COMANDO_QUANTIDADE_INVALIDA (-2)
 
 /*
+ * Avisa no stderr que um arquivo nao pode ser aberto ou lido, com o motivo
+ * dado pelo sistema. Quem chama guarda o errno logo depois da falha, antes de
+ * qualquer outra chamada que possa sobrescreve-lo.
+ *
+ * Abrir e ler sao duas falhas diferentes (Sessao 9). Um diretorio no lugar do
+ * arquivo passa pelo fopen em modo leitura no Linux, e so o primeiro fgets
+ * falha, com EISDIR. Sem conferir ferror depois do laco de leitura, esse
+ * fgets que devolve NULL e igual ao fim de um arquivo vazio: o commands.txt
+ * diretorio era aceito como zero comandos e gerava um result.txt vazio com
+ * codigo 0.
+ */
+static void avisar_falha_de_arquivo(const char *nome, const char *acao,
+                                    int erro) {
+    fprintf(stderr, ERRO_FORMATO_DO_ARQUIVO, nome);
+    fprintf(stderr, "  (nao foi possivel %s o arquivo: %s)\n", acao,
+            erro != 0 ? strerror(erro) : "motivo desconhecido");
+}
+
+/*
  * Converte texto em inteiro nao negativo.
  * Devolve 0 em caso de sucesso e grava o valor em *destino.
  * Devolve -1 se o texto nao for um inteiro nao negativo valido.
@@ -82,13 +105,19 @@
  * onde parou de converter: se fim nao aponta para o terminador da
  * string, o argumento tinha lixo ("10a", "abc", "") e deve ser recusado.
  * atoi devolveria 0 nesses casos, fingindo que entendeu o argumento.
+ *
+ * Exigir um digito no primeiro caractere vem da Sessao 9: strtol aceita
+ * espaco no inicio e sinal, entao " 5", "+5" e "-0" passavam aqui enquanto
+ * ler_valores_da_linha recusava os mesmos textos no customer.txt. Agora as
+ * tres entradas (linha de comando, customer.txt e commands.txt) aceitam
+ * exatamente a mesma forma de numero.
  */
 static int converter_inteiro_nao_negativo(const char *texto, int *destino) {
     char *fim = NULL;
     long valor;
 
-    if (texto == NULL || *texto == '\0') {
-        return -1;
+    if (texto == NULL || !isdigit((unsigned char) *texto)) {
+        return -1;               /* vazio, sinal, espaco ou nao numerico */
     }
 
     errno = 0;
@@ -100,7 +129,7 @@ static int converter_inteiro_nao_negativo(const char *texto, int *destino) {
     if (errno == ERANGE) {       /* estourou o long */
         return -1;
     }
-    if (valor < 0 || valor > INT_MAX) {
+    if (valor > INT_MAX) {       /* cabe no long mas nao no int */
         return -1;
     }
 
@@ -231,10 +260,10 @@ static int *ler_customer(int quantidade_de_recursos,
     int numero_da_linha = 0;
     int cliente = 0;
 
+    errno = 0;
     arquivo = fopen(ARQUIVO_CUSTOMER, "r");
     if (arquivo == NULL) {
-        fprintf(stderr, ERRO_FORMATO_DO_ARQUIVO, ARQUIVO_CUSTOMER);
-        fprintf(stderr, "  (nao foi possivel abrir o arquivo)\n");
+        avisar_falha_de_arquivo(ARQUIVO_CUSTOMER, "abrir", errno);
         return NULL;
     }
 
@@ -274,6 +303,15 @@ static int *ler_customer(int quantidade_de_recursos,
         }
 
         clientes++;
+    }
+
+    /* fgets devolve NULL tanto no fim do arquivo quanto num erro de leitura
+       (um diretorio, por exemplo). Sem esta checagem o erro viraria "nenhum
+       cliente encontrado", que manda procurar o defeito no lugar errado. */
+    if (ferror(arquivo)) {
+        avisar_falha_de_arquivo(ARQUIVO_CUSTOMER, "ler", errno);
+        fclose(arquivo);
+        return NULL;
     }
 
     if (clientes == 0) {         /* arquivo vazio ou so com linhas em branco */
@@ -318,6 +356,15 @@ static int *ler_customer(int quantidade_de_recursos,
         }
 
         cliente++;
+    }
+
+    /* A segunda passada tem que reencontrar todos os clientes da primeira; se
+       a leitura falhou no meio, parte da matriz ficou sem valor. */
+    if (cliente < clientes) {
+        avisar_falha_de_arquivo(ARQUIVO_CUSTOMER, "ler", errno);
+        free(maximum);
+        fclose(arquivo);
+        return NULL;
     }
 
     fclose(arquivo);
@@ -454,10 +501,10 @@ static int validar_commands(int quantidade_de_recursos,
     int *valores = NULL;
     int numero_da_linha = 0;
 
+    errno = 0;
     arquivo = fopen(ARQUIVO_COMMANDS, "r");
     if (arquivo == NULL) {
-        fprintf(stderr, ERRO_FORMATO_DO_ARQUIVO, ARQUIVO_COMMANDS);
-        fprintf(stderr, "  (nao foi possivel abrir o arquivo)\n");
+        avisar_falha_de_arquivo(ARQUIVO_COMMANDS, "abrir", errno);
         return -1;
     }
 
@@ -537,6 +584,15 @@ static int validar_commands(int quantidade_de_recursos,
 
     }
 
+    /* Sem isto, um commands.txt que nao pode ser lido (um diretorio) passava
+       como arquivo sem comandos: codigo 0 e result.txt vazio. */
+    if (ferror(arquivo)) {
+        avisar_falha_de_arquivo(ARQUIVO_COMMANDS, "ler", errno);
+        free(valores);
+        fclose(arquivo);
+        return -1;
+    }
+
     free(valores);
     fclose(arquivo);
     return 0;
@@ -581,6 +637,18 @@ static void montar_coluna(char *destino, const int *valores,
  * larguras 10 e 12 vieram do exemplo com tres recursos. Com recursos demais as
  * colunas estouram a largura e as barras deixam de se alinhar; %-10s nao
  * trunca, entao nenhum valor se perde, so o alinhamento.
+ *
+ * O limite exato, medido na Sessao 9: a barra do MAXIMUM sai do lugar quando
+ * o texto da coluna (cada valor mais um espaco) passa de 10 caracteres, e a do
+ * ALLOCATION quando passa de 12. Com valores de um digito isso acontece a
+ * partir de 6 recursos; com dois digitos, a partir de 4; e um unico valor de
+ * dez digitos (INT_MAX) ja basta. Com 8 recursos a tabela sai assim:
+ *
+ *   1 2 3 4 5 6 7 8 |   1 1 1 1 1 1 1 1 |   0 1 2 3 4 5 6 7
+ *   10 20 30 40 50 60 70 80 |   10 10 10 10 10 10 10 10 |   0 10 20 ...
+ *
+ * Os numeros continuam certos e as barras continuam entre as colunas certas;
+ * so deixam de ficar umas embaixo das outras.
  *
  * need nao e guardado em lugar nenhum. need e sempre maximum - allocation, e
  * uma matriz separada seria mais uma coisa para manter sincronizada e esquecer
@@ -930,10 +998,10 @@ static int executar_comandos(FILE *saida, const int *maximum, int *allocation,
     char linha[TAMANHO_MAXIMO_DA_LINHA];
     int *valores = NULL;
 
+    errno = 0;
     arquivo = fopen(ARQUIVO_COMMANDS, "r");
     if (arquivo == NULL) {
-        fprintf(stderr, ERRO_FORMATO_DO_ARQUIVO, ARQUIVO_COMMANDS);
-        fprintf(stderr, "  (nao foi possivel abrir o arquivo)\n");
+        avisar_falha_de_arquivo(ARQUIVO_COMMANDS, "abrir", errno);
         return -1;
     }
 
@@ -974,6 +1042,15 @@ static int executar_comandos(FILE *saida, const int *maximum, int *allocation,
             tratar_release(saida, allocation, available, cliente, valores,
                            quantidade_de_recursos);
         }
+    }
+
+    /* So aconteceria se o arquivo mudasse entre a validacao e esta passada;
+       nesse caso o result.txt ficou incompleto e o codigo de saida avisa. */
+    if (ferror(arquivo)) {
+        avisar_falha_de_arquivo(ARQUIVO_COMMANDS, "ler", errno);
+        free(valores);
+        fclose(arquivo);
+        return -1;
     }
 
     free(valores);

@@ -948,3 +948,191 @@ codigo de saida: 1
 exit
 
 Script done on 2026-11-15 21:40:02-03:00 [COMMAND_EXIT_CODE="0"]
+Script started on 2026-11-16 08:56:16-03:00 [TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="161" LINES="18"]
+[?2004h]0;henrique@Lenovin: /mnt/c/Users/calad/dev/imp6/hac2[01;32mhenrique@Lenovin[00m:[01;34m/mnt/c/Users/calad/dev/imp6/hac2[00m$ cd /mnt/c/Users/calad/dev/imp6/hac2
+REF=/mnt/c/Users/calad/dev/imp6/referencia/result.txt
+echo "=== S9: ambiente ==="
+date; whoami; pwd
+echo "=== S9: compilacao e regressao do caso principal ==="
+make clean
+make
+./banker 10 5 7
+diff result.txt "$REF" && echo "diff continua limpo"
+./banker 10 5 7 2>/dev/null | wc -c
+echo "=== S9: preparando em /tmp, onde chmod funciona de verdade ==="
+rm -rf /tmp/teste-s9 && mkdir -p /tmp/teste-s9 && cd /tmp/teste-s9
+BANKER=/mnt/c/Users/calad/dev/imp6/hac2/banker
+printf '7,5,3\n3,2,2\n9,0,2\n2,2,2\n4,3,3' > customer.txt
+printf 'RQ 0 1 1 1\n*' > commands.txt
+echo "=== S9: customer.txt existe mas nao pode ser lido ==="
+chmod 000 customer.txt
+ls -l customer.txt
+$BANKER 10 5 7echo "codigo de saida: $?"chmod 644 customer.txtecho "=== S9: commands.txt existe mas nao pode ser lido ==="chmod 000 commands.txt$BANKER 10 5 7echo "codigo de saida: $?"chmod 644 commands.txtecho "=== S9: diretorio no lugar do arquivo ==="mkdir -p /tmp/teste-s9b && cd /tmp/teste-s9bmkdir -p customer.txtprintf 'RQ 0 1 1 1\n*' > commands.txt$BANKER 10 5 7echo "codigo de saida: $?"cd /tmp/teste-s9echo "=== S9: diretorio sem permissao de escrita para o result.txt ==="mkdir -p /tmp/teste-s9c && cp customer.txt commands.txt /tmp/teste-s9c/cd /tmp/teste-s9c && chmod 500 .$BANKER 10 5 7echo "codigo de saida: $?"chmod 755 . && cd /tmp/teste-s9echo "=== S9: numero que nao cabe em int, na linha de comando ==="$BANKER 99999999999 5 7echo "codigo de saida: $?"echo "=== S9: numero que nao cabe em int, dentro do customer.txt ==="printf '99999999999,5,3\n3,2,2' > customer.txt$BANKER 10 5 7echo "codigo de saida: $?"echo "=== S9: numero que nao cabe em int, dentro do commands.txt ==="printf '7,5,3\n3,2,2' > customer.txtprintf 'RQ 0 99999999999 1 1' > commands.txt$BANKER 10 5 7echo "codigo de saida: $?"echo "=== S9: CRLF nos dois arquivos ==="printf '7,5,3\r\n3,2,2\r\n9,0,2\r\n2,2,2\r\n4,3,3' > customer.txtprintf 'RQ 0 0 2 1\r\nRQ 2 3 0 2\r\n*\r\n' > commands.txtfile customer.txt commands.txt$BANKER 10 5 7echo "codigo de saida: $?"cat result.txtecho "=== S9: comando em minuscula ==="printf '7,5,3\n3,2,2' > customer.txtprintf 'rq 0 1 1 1' > commands.txt$BANKER 10 5 7echo "codigo de saida: $?"echo "=== S9: espacos extras entre os campos ==="printf 'RQ   0   1  1 1\n*' > commands.txt$BANKER 10 5 7echo "codigo de saida: $?"cat result.txtecho "=== S9: divergencia entre customer.txt e commands.txt ==="printf '7,5,3\n3,2,2' > customer.txtprintf 'RQ 0 1 1 1 1\n*' > commands.txt$BANKER 10 5 7[7mecho "codigo de saida: $?"[27m[7mecho "=== S9: oito recursos, alinhamento das colunas ==="[27m[7mprintf '5,5,5,5,5,5,5,5\n4,4,4,4,4,4,4,4' > customer.txt[27m[7mprintf 'RQ 0 1 1 1 1 1 1 1 1\n*' > commands.txt[27m[7m$BANKER 9 9 9 9 9 9 9 9[27m[7mecho "codigo de saida: $?"[27m[7mcat -A result.txt[27m[7mecho "=== S9: vinte clientes ==="[27m[7mfor i in $(seq 1 20); do printf '2,2,2\n'; done > customer.txt[27m[7mprintf 'RQ 19 1 1 1\n*' > commands.txt[27m[7m$BANKER 10 10 10[27m[7mecho "codigo de saida: $?"[27m[7mwc -l result.txt[27m[7mtail -3 result.txt[27m[7mcd /mnt/c/Users/calad/dev/imp6/hac2[27m[7mecho "=== S9: git ==="[27m[7mgit status --short[27m[7mexit[27mecho "codigo de saida: $?"echo "=== S9: oito recursos, alinhamento das colunas ==="printf '5,5,5,5,5,5,5,5\n4,4,4,4,4,4,4,4' > customer.txtprintf 'RQ 0 1 1 1 1 1 1 1 1\n*' > commands.txt$BANKER 9 9 9 9 9 9 9 9echo "codigo de saida: $?"cat -A result.txtecho "=== S9: vinte clientes ==="for i in $(seq 1 20); do printf '2,2,2\n'; done > customer.txtprintf 'RQ 19 1 1 1\n*' > commands.txt$BANKER 10 10 10echo "codigo de saida: $?"wc -l result.txttail -3 result.txtcd /mnt/c/Users/calad/dev/imp6/hac2echo "=== S9: git ==="git status --shortexit
+[?2004l=== S9: ambiente ===
+Mon Nov 16 08:56:18 -03 2026
+henrique
+/mnt/c/Users/calad/dev/imp6/hac2
+=== S9: compilacao e regressao do caso principal ===
+rm -f banker banker.exe
+gcc -Wall -Wextra -std=c11 -o banker banker.c
+recursos: 3
+available: 2 3 0
+clientes: 5
+diff continua limpo
+41
+=== S9: preparando em /tmp, onde chmod funciona de verdade ===
+=== S9: customer.txt existe mas nao pode ser lido ===
+---------- 1 henrique henrique 29 Nov 16 08:56 customer.txt
+Erro: o arquivo customer.txt nao esta no formato indicado.
+  (nao foi possivel abrir o arquivo: Permission denied)
+codigo de saida: 1
+=== S9: commands.txt existe mas nao pode ser lido ===
+Erro: o arquivo commands.txt nao esta no formato indicado.
+  (nao foi possivel abrir o arquivo: Permission denied)
+codigo de saida: 1
+=== S9: diretorio no lugar do arquivo ===
+mkdir: cannot create directory ‘customer.txt’: File exists
+recursos: 3
+available: 9 4 6
+clientes: 5
+codigo de saida: 0
+=== S9: diretorio sem permissao de escrita para o result.txt ===
+Erro: nao foi possivel criar o arquivo result.txt (Permission denied).
+codigo de saida: 1
+=== S9: numero que nao cabe em int, na linha de comando ===
+Erro: argumento 1 ("99999999999") nao e um inteiro nao negativo valido.
+codigo de saida: 1
+=== S9: numero que nao cabe em int, dentro do customer.txt ===
+Erro: o arquivo customer.txt nao esta no formato indicado.
+  (linha 1: esperados 3 inteiros nao negativos separados por virgula)
+codigo de saida: 1
+=== S9: numero que nao cabe em int, dentro do commands.txt ===
+Erro: o arquivo commands.txt nao esta no formato indicado.
+  (linha 1: esperado "RQ <cliente> <3 valores>", "RL <cliente> <3 valores>" ou "*", com inteiros nao negativos)
+codigo de saida: 1
+=== S9: CRLF nos dois arquivos ===
+customer.txt: CSV ASCII text
+commands.txt: ASCII text, with CRLF line terminators
+recursos: 3
+available: 7 3 4
+clientes: 5
+codigo de saida: 0
+Allocate to customer 0 the resources 0 2 1
+Allocate to customer 2 the resources 3 0 2
+MAXIMUM   |   ALLOCATION  |   NEED
+7 5 3     |   0 2 1       |   7 3 2 
+3 2 2     |   0 0 0       |   3 2 2 
+9 0 2     |   3 0 2       |   6 0 0 
+2 2 2     |   0 0 0       |   2 2 2 
+4 3 3     |   0 0 0       |   4 3 3 
+AVAILABLE 7 3 4 
+=== S9: comando em minuscula ===
+Erro: o arquivo commands.txt nao esta no formato indicado.
+  (linha 1: esperado "RQ <cliente> <3 valores>", "RL <cliente> <3 valores>" ou "*", com inteiros nao negativos)
+codigo de saida: 1
+=== S9: espacos extras entre os campos ===
+recursos: 3
+available: 9 4 6
+clientes: 2
+codigo de saida: 0
+Allocate to customer 0 the resources 1 1 1
+MAXIMUM   |   ALLOCATION  |   NEED
+7 5 3     |   1 1 1       |   6 4 2 
+3 2 2     |   0 0 0       |   3 2 2 
+AVAILABLE 9 4 6 
+=== S9: divergencia entre customer.txt e commands.txt ===
+Erro: a quantidade de recursos informada na linha de comando e diferente da quantidade de recursos do arquivo commands.txt.
+  (linha 1 declara 4 valores, esperados 3)
+codigo de saida: 1
+=== S9: oito recursos, alinhamento das colunas ===
+recursos: 8
+available: 8 8 8 8 8 8 8 8
+clientes: 2
+codigo de saida: 0
+Allocate to customer 0 the resources 1 1 1 1 1 1 1 1$
+MAXIMUM   |   ALLOCATION  |   NEED$
+5 5 5 5 5 5 5 5 |   1 1 1 1 1 1 1 1 |   4 4 4 4 4 4 4 4 $
+4 4 4 4 4 4 4 4 |   0 0 0 0 0 0 0 0 |   4 4 4 4 4 4 4 4 $
+AVAILABLE 8 8 8 8 8 8 8 8 $
+=== S9: vinte clientes ===
+recursos: 3
+available: 9 9 9
+clientes: 20
+codigo de saida: 0
+23 result.txt
+2 2 2     |   0 0 0       |   2 2 2 
+2 2 2     |   1 1 1       |   1 1 1 
+AVAILABLE 9 9 9 
+=== S9: git ===
+ [31mM[m banker.c
+ [31mM[m evidencias.log
+exit
+
+Script done on 2026-11-16 08:56:20-03:00 [COMMAND_EXIT_CODE="0"]
+Script started on 2026-11-16 08:57:29-03:00 [TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="161" LINES="18"]
+[?2004h]0;henrique@Lenovin: /mnt/c/Users/calad/dev/imp6/hac2[01;32mhenrique@Lenovin[00m:[01;34m/mnt/c/Users/calad/dev/imp6/hac2[00m$ BANKER=/mnt/c/Users/calad/dev/imp6/hac2/banker
+echo "=== S9: refazendo, diretorio no lugar do arquivo ==="
+rm -rf /tmp/teste-s9d && mkdir -p /tmp/teste-s9d && cd /tmp/teste-s9d
+[7mpwd[27m
+[7mmkdir customer.txt[27m
+[7mprintf 'RQ 0 1 1 1\n*' > commands.txt[27m
+[7mls -l[27m
+[7m$BANKER 10 5 7[27m
+[7mecho "codigo de saida: $?"[27m
+[7mecho "=== S9: refazendo, CRLF no customer.txt com prova ==="[27m
+[7mrm -rf /tmp/teste-s9e && mkdir -p /tmp/teste-s9e && cd /tmp/teste-s9e[27m
+[7mpwd[27m
+[7mprintf '7,5,3\r\n3,2,2\r\n9,0,2\r\n2,2,2\r\n4,3,3\r\n' > customer.txt[27m
+[7mprintf 'RQ 0 0 2 1\r\n*\r\n' > commands.txt[27m
+[7mcat -A customer.txt[27m
+[7mcat -A commands.txt[27m
+[7m$BANKER 10 5 7[27m
+[7mecho "codigo de saida: $?"[27m
+[7mcat result.txt[27m[7mcd /mnt/c/Users/calad/dev/imp6/hac2[27m[7mexit[27m[A[A[A[A[A[A[A[A[A[A[A[A[A[A[Apwd
+mkdir customer.txt
+printf 'RQ 0 1 1 1\n*' > commands.txt
+ls -l
+$BANKER 10 5 7
+echo "codigo de saida: $?"
+echo "=== S9: refazendo, CRLF no customer.txt com prova ==="
+rm -rf /tmp/teste-s9e && mkdir -p /tmp/teste-s9e && cd /tmp/teste-s9e
+pwd
+printf '7,5,3\r\n3,2,2\r\n9,0,2\r\n2,2,2\r\n4,3,3\r\n' > customer.txt
+printf 'RQ 0 0 2 1\r\n*\r\n' > commands.txt
+cat -A customer.txt
+cat -A commands.txt
+$BANKER 10 5 7
+echo "codigo de saida: $?"
+cat result.txtcd /mnt/c/Users/calad/dev/imp6/hac2exit
+[?2004l=== S9: refazendo, diretorio no lugar do arquivo ===
+/tmp/teste-s9d
+total 8
+-rw-r--r-- 1 henrique henrique   12 Nov 16 08:57 commands.txt
+drwxr-xr-x 2 henrique henrique 4096 Nov 16 08:57 [0m[01;34mcustomer.txt[0m
+Erro: o arquivo customer.txt nao esta no formato indicado.
+  (nao foi possivel ler o arquivo: Is a directory)
+codigo de saida: 1
+=== S9: refazendo, CRLF no customer.txt com prova ===
+/tmp/teste-s9e
+7,5,3^M$
+3,2,2^M$
+9,0,2^M$
+2,2,2^M$
+4,3,3^M$
+RQ 0 0 2 1^M$
+*^M$
+recursos: 3
+available: 10 3 6
+clientes: 5
+codigo de saida: 0
+Allocate to customer 0 the resources 0 2 1
+MAXIMUM   |   ALLOCATION  |   NEED
+7 5 3     |   0 2 1       |   7 3 2 
+3 2 2     |   0 0 0       |   3 2 2 
+9 0 2     |   0 0 0       |   9 0 2 
+2 2 2     |   0 0 0       |   2 2 2 
+4 3 3     |   0 0 0       |   4 3 3 
+AVAILABLE 10 3 6 
+exit
+
+Script done on 2026-11-16 08:57:32-03:00 [COMMAND_EXIT_CODE="0"]
