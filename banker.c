@@ -23,6 +23,10 @@
  * Sessao 7: o algoritmo de seguranca dentro do RQ -- alocacao provisoria,
  * teste do estado resultante e a mensagem result in an unsafe state.
  *
+ * Sessao 8: auditoria do tratamento de erro e da memoria -- toda mensagem de
+ * erro e aviso no stderr, result.txt aberto so depois de toda a validacao, e
+ * cada saida de erro liberando o que ja tinha sido alocado.
+ *
  * Uso: ./banker <total_r0> <total_r1> ... <total_rN>
  */
 
@@ -1051,11 +1055,23 @@ int main(int argc, char *argv[]) {
     /* "wb" e nao "w": no Windows o modo texto traduz cada '\n' em "\r\n", e o
        result.txt sairia com CRLF, diferente byte a byte do arquivo do
        professor mesmo com o conteudo certo. Em Linux o "b" nao faz nada, entao
-       a mesma linha serve nos dois lugares. */
+       a mesma linha serve nos dois lugares.
+
+       Decisao (o enunciado nao cobre): o result.txt so e aberto aqui, depois
+       dos argumentos, do customer.txt e do commands.txt terem passado. Um run
+       invalido nao cria nem trunca o arquivo, entao nunca deixa um result.txt
+       vazio que pareca saida; o preco e que o result.txt de um run anterior
+       continua em disco.
+
+       Decisao tambem: falhar ao abrir o result.txt nao esta na lista de erros
+       do enunciado, mas sair calado sem escrever a saida seria pior. Mensagem
+       no stderr, com o motivo do sistema, e codigo 1 como os outros erros. */
+    errno = 0;
     saida = fopen(ARQUIVO_RESULT, "wb");
     if (saida == NULL) {
-        fprintf(stderr, "Erro: nao foi possivel criar o arquivo %s.\n",
-                ARQUIVO_RESULT);
+        fprintf(stderr, "Erro: nao foi possivel criar o arquivo %s (%s).\n",
+                ARQUIVO_RESULT,
+                errno != 0 ? strerror(errno) : "motivo desconhecido");
         free(allocation);
         free(maximum);
         free(available);

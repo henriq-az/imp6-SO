@@ -773,3 +773,178 @@ AVAILABLE 4
 exit
 
 Script done on 2026-11-15 16:59:39-03:00 [COMMAND_EXIT_CODE="0"]
+Script started on 2026-11-15 21:38:42-03:00 [TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="161" LINES="18"]
+[?2004h]0;henrique@Lenovin: /mnt/c/Users/calad/dev/imp6/hac2[01;32mhenrique@Lenovin[00m:[01;34m/mnt/c/Users/calad/dev/imp6/hac2[00m$ cd /mnt/c/Users/calad/dev/imp6/hac2
+REF=/mnt/c/Users/calad/dev/imp6/referencia/result.txt
+echo "=== S8: ambiente ==="
+date; whoami; pwd
+echo "=== S8: compilacao do zero, sem avisos ==="
+make clean
+make
+echo "=== S8: regressao do caso principal ==="
+./banker 10 5 7
+diff result.txt "$REF" && echo "diff continua limpo"
+echo "=== S8: stdout do caso valido deve ser vazio ==="
+./banker 10 5 7 2>/dev/null | wc -c
+echo "=== S8: separacao de fluxos, so o stdout ==="
+./banker 10 5 2>/dev/null
+echo "bytes no stdout acima: nenhum e o esperado"
+echo "=== S8: separacao de fluxos, so o stderr ==="
+./banker 10 5 >/dev/null
+echo "codigo de saida: $?"
+echo "=== S8: run invalido nao cria result.txt ==="rm -f result.txt./banker 10 5 >/dev/null 2>&1ls -l result.txtecho "codigo do ls: $?"echo "=== S8: e o run valido cria de volta ==="./banker 10 5 7ls -l result.txtecho "=== S8: codigos de saida de cada caso ==="./banker >/dev/null 2>&1; echo "sem argumentos: $?"./banker 10 5 >/dev/null 2>&1; echo "argumentos errados: $?"./banker 10 abc 7 >/dev/null 2>&1; echo "argumento invalido: $?"./banker 10 5 7 >/dev/null 2>&1; echo "caso valido: $?"echo "=== S8: sitios de alocacao e liberacao ==="grep -n 'malloc\|calloc\|free' banker.cecho "=== S8: build com sanitizer em /tmp ==="gcc -Wall -Wextra -std=c11 -g -fsanitize=address,undefined -o /tmp/banker-asan banker.cecho "codigo da compilacao: $?"echo "=== S8: sanitizer no caso valido ==="/tmp/banker-asan 10 5 7echo "codigo de saida: $?"echo "=== S8: sanitizer nos caminhos de erro ==="/tmp/banker-asanecho "codigo de saida: $?"/tmp/banker-asan 10 5echo "codigo de saida: $?"/tmp/banker-asan 10 abc 7echo "codigo de saida: $?"[7mecho "=== S8: sanitizer com arquivo ausente ==="[27m[7mrm -rf /tmp/teste-s8 && mkdir -p /tmp/teste-s8 && cd /tmp/teste-s8[27m[7m/tmp/banker-asan 10 5 7[27m[7mecho "codigo de saida: $?"[27m[7mecho "=== S8: sanitizer no caminho do estado inseguro ==="[27m[7mprintf '3\n3' > customer.txt[27m[7mprintf 'RQ 0 2\nRQ 1 2\n*' > commands.txt[27m[7m/tmp/banker-asan 4[27m[7mecho "codigo de saida: $?"[27m[7mcat result.txt[27m[7mecho "=== S8: sanitizer no caminho do release invalido ==="[27m[7mprintf 'RQ 0 2\nRL 0 3\n*' > commands.txt[27m[7m/tmp/banker-asan 4[27m[7mecho "codigo de saida: $?"[27m[7mcd /mnt/c/Users/calad/dev/imp6/hac2[27m[7mecho "=== S8: git ==="[27m[7mgit status --short[27m[7mexit[27mecho "=== S8: sanitizer com arquivo ausente ==="rm -rf /tmp/teste-s8 && mkdir -p /tmp/teste-s8 && cd /tmp/teste-s8/tmp/banker-asan 10 5 7echo "codigo de saida: $?"echo "=== S8: sanitizer no caminho do estado inseguro ==="printf '3\n3' > customer.txtprintf 'RQ 0 2\nRQ 1 2\n*' > commands.txt/tmp/banker-asan 4echo "codigo de saida: $?"cat result.txtecho "=== S8: sanitizer no caminho do release invalido ==="printf 'RQ 0 2\nRL 0 3\n*' > commands.txt/tmp/banker-asan 4echo "codigo de saida: $?"cd /mnt/c/Users/calad/dev/imp6/hac2echo "=== S8: git ==="git status --shortexit
+[?2004l=== S8: ambiente ===
+Sun Nov 15 21:38:45 -03 2026
+henrique
+/mnt/c/Users/calad/dev/imp6/hac2
+=== S8: compilacao do zero, sem avisos ===
+rm -f banker banker.exe
+gcc -Wall -Wextra -std=c11 -o banker banker.c
+=== S8: regressao do caso principal ===
+recursos: 3
+available: 2 3 0
+clientes: 5
+diff continua limpo
+=== S8: stdout do caso valido deve ser vazio ===
+41
+=== S8: separacao de fluxos, so o stdout ===
+bytes no stdout acima: nenhum e o esperado
+=== S8: separacao de fluxos, so o stderr ===
+Erro: a quantidade de recursos informada na linha de comando e diferente da quantidade de recursos do arquivo customer.txt.
+  (linha 1 declara 3 valores, esperados 2)
+codigo de saida: 1
+=== S8: run invalido nao cria result.txt ===
+ls: cannot access 'result.txt': No such file or directory
+codigo do ls: 2
+=== S8: e o run valido cria de volta ===
+recursos: 3
+available: 2 3 0
+clientes: 5
+-rwxrwxrwx 1 henrique henrique 755 Nov 15 21:38 [0m[01;32mresult.txt[0m
+=== S8: codigos de saida de cada caso ===
+sem argumentos: 1
+argumentos errados: 1
+argumento invalido: 1
+caso valido: 0
+=== S8: sitios de alocacao e liberacao ===
+[32m[K215[m[K[36m[K:[m[K * cliente i comeca em maximum + i * quantidade_de_recursos. Um [01;31m[Kmalloc[m[K,
+[32m[K216[m[K[36m[K:[m[K * um [01;31m[Kfree[m[K, e a mesma forma vai servir para allocation e need na Sessao 4.
+[32m[K286[m[K[36m[K:[m[K    maximum = [01;31m[Kmalloc[m[K((size_t) clientes * (size_t) quantidade_de_recursos *
+[32m[K315[m[K[36m[K:[m[K            [01;31m[Kfree[m[K(maximum);
+[32m[K464[m[K[36m[K:[m[K    /* Um vetor de valores basta para todas as linhas, e o [01;31m[Kmalloc[m[K fica fora do
+[32m[K466[m[K[36m[K:[m[K    valores = [01;31m[Kmalloc[m[K((size_t) quantidade_de_recursos * sizeof(int));
+[32m[K490[m[K[36m[K:[m[K            [01;31m[Kfree[m[K(valores);
+[32m[K508[m[K[36m[K:[m[K            [01;31m[Kfree[m[K(valores);
+[32m[K520[m[K[36m[K:[m[K            [01;31m[Kfree[m[K(valores);
+[32m[K533[m[K[36m[K:[m[K            [01;31m[Kfree[m[K(valores);
+[32m[K540[m[K[36m[K:[m[K    [01;31m[Kfree[m[K(valores);
+[32m[K602[m[K[36m[K:[m[K    /* Um [01;31m[Kmalloc[m[K so para os tres buffers de texto, fatiado logo abaixo. */
+[32m[K603[m[K[36m[K:[m[K    colunas = [01;31m[Kmalloc[m[K(3 * tamanho_da_coluna);
+[32m[K604[m[K[36m[K:[m[K    need = [01;31m[Kmalloc[m[K((size_t) quantidade_de_recursos * sizeof(int));
+[32m[K608[m[K[36m[K:[m[K        [01;31m[Kfree[m[K(colunas);
+[32m[K609[m[K[36m[K:[m[K        [01;31m[Kfree[m[K(need);
+[32m[K644[m[K[36m[K:[m[K    [01;31m[Kfree[m[K(colunas);
+[32m[K645[m[K[36m[K:[m[K    [01;31m[Kfree[m[K(need);
+[32m[K728[m[K[36m[K:[m[K    work = [01;31m[Kmalloc[m[K((size_t) quantidade_de_recursos * sizeof(int));
+[32m[K729[m[K[36m[K:[m[K    terminou = [01;31m[Kcalloc[m[K((size_t) quantidade_de_clientes, sizeof(char));
+[32m[K733[m[K[36m[K:[m[K        [01;31m[Kfree[m[K(work);
+[32m[K734[m[K[36m[K:[m[K        [01;31m[Kfree[m[K(terminou);
+[32m[K772[m[K[36m[K:[m[K    [01;31m[Kfree[m[K(work);
+[32m[K773[m[K[36m[K:[m[K    [01;31m[Kfree[m[K(terminou);
+[32m[K940[m[K[36m[K:[m[K    valores = [01;31m[Kmalloc[m[K((size_t) quantidade_de_recursos * sizeof(int));
+[32m[K979[m[K[36m[K:[m[K    [01;31m[Kfree[m[K(valores);
+[32m[K1009[m[K[36m[K:[m[K    available = [01;31m[Kmalloc[m[K((size_t) quantidade_de_recursos * sizeof(int));
+[32m[K1021[m[K[36m[K:[m[K            [01;31m[Kfree[m[K(available);
+[32m[K1028[m[K[36m[K:[m[K        [01;31m[Kfree[m[K(available);
+[32m[K1036[m[K[36m[K:[m[K        [01;31m[Kfree[m[K(maximum);
+[32m[K1037[m[K[36m[K:[m[K        [01;31m[Kfree[m[K(available);
+[32m[K1042[m[K[36m[K:[m[K       nada na mao. [01;31m[Kcalloc[m[K ja zera, entao nao precisa de laco. Mesma forma do
+[32m[K1045[m[K[36m[K:[m[K    allocation = [01;31m[Kcalloc[m[K((size_t) quantidade_de_clientes *
+[32m[K1050[m[K[36m[K:[m[K        [01;31m[Kfree[m[K(maximum);
+[32m[K1051[m[K[36m[K:[m[K        [01;31m[Kfree[m[K(available);
+[32m[K1075[m[K[36m[K:[m[K        [01;31m[Kfree[m[K(allocation);
+[32m[K1076[m[K[36m[K:[m[K        [01;31m[Kfree[m[K(maximum);
+[32m[K1077[m[K[36m[K:[m[K        [01;31m[Kfree[m[K(available);
+[32m[K1085[m[K[36m[K:[m[K        [01;31m[Kfree[m[K(allocation);
+[32m[K1086[m[K[36m[K:[m[K        [01;31m[Kfree[m[K(maximum);
+[32m[K1087[m[K[36m[K:[m[K        [01;31m[Kfree[m[K(available);
+[32m[K1103[m[K[36m[K:[m[K    [01;31m[Kfree[m[K(allocation);
+[32m[K1104[m[K[36m[K:[m[K    [01;31m[Kfree[m[K(maximum);
+[32m[K1105[m[K[36m[K:[m[K    [01;31m[Kfree[m[K(available);
+=== S8: build com sanitizer em /tmp ===
+codigo da compilacao: 0
+=== S8: sanitizer no caso valido ===
+recursos: 3
+available: 2 3 0
+clientes: 5
+codigo de saida: 0
+=== S8: sanitizer nos caminhos de erro ===
+Uso: /tmp/banker-asan <total_recurso_0> [total_recurso_1] ...
+Informe o total de instancias de cada recurso (inteiros nao negativos).
+Exemplo: /tmp/banker-asan 10 5 7
+codigo de saida: 1
+Erro: a quantidade de recursos informada na linha de comando e diferente da quantidade de recursos do arquivo customer.txt.
+  (linha 1 declara 3 valores, esperados 2)
+codigo de saida: 1
+Erro: argumento 2 ("abc") nao e um inteiro nao negativo valido.
+codigo de saida: 1
+=== S8: sanitizer com arquivo ausente ===
+Erro: o arquivo customer.txt nao esta no formato indicado.
+  (nao foi possivel abrir o arquivo)
+codigo de saida: 1
+=== S8: sanitizer no caminho do estado inseguro ===
+recursos: 1
+available: 2
+clientes: 2
+codigo de saida: 0
+Allocate to customer 0 the resources 2
+The customer 1 request 2 was denied because result in an unsafe state
+MAXIMUM   |   ALLOCATION  |   NEED
+3         |   2           |   1 
+3         |   0           |   3 
+AVAILABLE 2 
+=== S8: sanitizer no caminho do release invalido ===
+Aviso: RL do cliente 0 ignorado: devolve 3 do recurso 0, mas tem so 2 alocado.
+recursos: 1
+available: 2
+clientes: 2
+codigo de saida: 0
+=== S8: git ===
+ [31mM[m banker.c
+ [31mM[m evidencias.log
+exit
+
+Script done on 2026-11-15 21:38:46-03:00 [COMMAND_EXIT_CODE="0"]
+Script started on 2026-11-15 21:39:58-03:00 [TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="161" LINES="18"]
+[?2004h]0;henrique@Lenovin: /mnt/c/Users/calad/dev/imp6/hac2[01;32mhenrique@Lenovin[00m:[01;34m/mnt/c/Users/calad/dev/imp6/hac2[00m$ [7mecho "=== S8: controle positivo do detector de vazamento ==="[27m
+[7mprintf '#include <stdlib.h>\nint main(void) { malloc(100); return 0; }\n' > /tmp/vaza.c[27m
+[7mgcc -fsanitize=address -g -o /tmp/vaza /tmp/vaza.c[27m
+[7m/tmp/vaza[27m
+[7mecho "codigo de saida: $?"[27m
+[7mexit[27m[A[A[A[A[A]0;henrique@Lenovin: /mnt/c/Users/calad/dev/imp6/hac2[01;32mhenrique@Lenovin[00m:[01;34m/mnt/c/Users/calad/dev/imp6/hac2[00m$ echo "=== S8: controle positivo do detector de vazamento ==="
+printf '#include <stdlib.h>\nint main(void) { malloc(100); return 0; }\n' > /tmp/vaza.c
+gcc -fsanitize=address -g -o /tmp/vaza /tmp/vaza.c
+/tmp/vaza
+echo "codigo de saida: $?"
+exit
+[?2004l=== S8: controle positivo do detector de vazamento ===
+[01m[K/tmp/vaza.c:[m[K In function ‘[01m[Kmain[m[K’:
+[01m[K/tmp/vaza.c:2:18:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kmalloc[m[K’ declared with attribute ‘[01m[Kwarn_unused_result[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-result-Wunused-result]8;;[m[K]
+    2 | int main(void) { [01;35m[Kmalloc(100)[m[K; return 0; }
+      |                  [01;35m[K^~~~~~~~~~~[m[K
+
+=================================================================
+[1m[31m==560==ERROR: LeakSanitizer: detected memory leaks
+[1m[0m
+[1m[34mDirect leak of 100 byte(s) in 1 object(s) allocated from:
+[1m[0m    #0 0xf0aeb1e676d0 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
+    #1 0xb1a7c1e20864 in main /tmp/vaza.c:2
+    #2 0xf0aeb1be84c0  (/lib/aarch64-linux-gnu/libc.so.6+0x284c0) (BuildId: d6c205bda1b6e91815f8fef45bdf56bc2239c37e)
+    #3 0xf0aeb1be8594 in __libc_start_main (/lib/aarch64-linux-gnu/libc.so.6+0x28594) (BuildId: d6c205bda1b6e91815f8fef45bdf56bc2239c37e)
+    #4 0xb1a7c1e2076c in _start (/tmp/vaza+0x76c) (BuildId: 64cd57140511f10cec16a94509f178f86adf53a6)
+
+SUMMARY: AddressSanitizer: 100 byte(s) leaked in 1 allocation(s).
+codigo de saida: 1
+exit
+
+Script done on 2026-11-15 21:40:02-03:00 [COMMAND_EXIT_CODE="0"]
