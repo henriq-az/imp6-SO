@@ -1167,15 +1167,6 @@ int main(int argc, char *argv[]) {
 
     fclose(saida);
 
-    /* Saida temporaria de conferencia das Sessoes 1 e 2: sai na Sessao 7,
-       quando o result.txt for a unica saida do programa. */
-    printf("recursos: %d\n", quantidade_de_recursos);
-    printf("available:");
-    for (i = 0; i < quantidade_de_recursos; i++) {
-        printf(" %d", available[i]);
-    }
-    printf("\n");
-    printf("clientes: %d\n", quantidade_de_clientes);
 
     free(allocation);
     free(maximum);

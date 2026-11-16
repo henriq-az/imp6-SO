@@ -1136,3 +1136,95 @@ AVAILABLE 10 3 6
 exit
 
 Script done on 2026-11-16 08:57:32-03:00 [COMMAND_EXIT_CODE="0"]
+Script started on 2026-11-16 10:39:57-03:00 [TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="161" LINES="18"]
+[?2004h]0;henrique@Lenovin: /mnt/c/Users/calad/dev/imp6/hac2[01;32mhenrique@Lenovin[00m:[01;34m/mnt/c/Users/calad/dev/imp6/hac2[00m$ cd /mnt/c/Users/calad/dev/imp6/hac2
+REF=/mnt/c/Users/calad/dev/imp6/referencia/result.txt
+echo "=== S10: ambiente ==="
+date; whoami; pwd
+echo "=== S10: o README existe e nao tem pendencia ==="
+wc -l README.md
+grep -n -i -E 'TODO|FIXME|XXX|preencher' README.md
+echo "codigo do grep: $? (1 e o esperado, quer dizer que nao achou nada)"
+echo "=== S10: stdout limpo, como o README afirma ==="
+make clean && make
+./banker 10 5 7 2>/dev/null | wc -c
+echo "=== S10: seguindo o README numa pasta limpa ==="
+rm -rf /tmp/conferencia && mkdir -p /tmp/conferencia
+cp banker.c Makefile /tmp/conferencia/
+cp /mnt/c/Users/calad/dev/imp6/referencia/customer.txt /tmp/conferencia/
+[7mcp /mnt/c/Users/calad/dev/imp6/referencia/commands.txt /tmp/conferencia/[27m
+[7mcd /tmp/conferencia[27m
+[7mls -a[27m
+[7mecho "=== S10: make clean e make, so com o que o README manda ==="[27m[7mmake clean[27m[7mmake[27m[7mecho "=== S10: executando o exemplo do README ==="[27m[7m./banker 10 5 7[27m[7mecho "codigo de saida: $?"[27m[7mdiff result.txt "$REF" && echo "RODA DO ZERO COM SO O QUE O README MANDA"[27m[7mecho "=== S10: make clean remove o compilado ==="[27m[7mmake clean[27m[7mls -l banker[27m[7mecho "codigo do ls: $?"[27m[7mcd /mnt/c/Users/calad/dev/imp6/hac2[27m[7mecho "=== S10: git ==="[27m[7mgit status --short[27m[7mexit[27m[A[A[Acp /mnt/c/Users/calad/dev/imp6/referencia/commands.txt /tmp/conferencia/
+cd /tmp/conferencia
+ls -a
+echo "=== S10: make clean e make, so com o que o README manda ==="make cleanmakeecho "=== S10: executando o exemplo do README ==="./banker 10 5 7echo "codigo de saida: $?"diff result.txt "$REF" && echo "RODA DO ZERO COM SO O QUE O README MANDA"echo "=== S10: make clean remove o compilado ==="make cleanls -l bankerecho "codigo do ls: $?"cd /mnt/c/Users/calad/dev/imp6/hac2echo "=== S10: git ==="git status --shortexit
+[?2004l=== S10: ambiente ===
+Mon Nov 16 10:39:59 -03 2026
+henrique
+/mnt/c/Users/calad/dev/imp6/hac2
+=== S10: o README existe e nao tem pendencia ===
+104 README.md
+[32m[K76[m[K[36m[K:[m[KEm [01;31m[Ktodo[m[Ks esses casos o programa escreve uma mensagem no `stderr`, termina com
+[32m[K87[m[K[36m[K:[m[K  inseguro desde o início. Por isso [01;31m[Ktodo[m[K `RQ` é negado, inclusive um pedido de
+codigo do grep: 0 (1 e o esperado, quer dizer que nao achou nada)
+=== S10: stdout limpo, como o README afirma ===
+rm -f banker banker.exe
+gcc -Wall -Wextra -std=c11 -o banker banker.c
+41
+=== S10: seguindo o README numa pasta limpa ===
+[0m[01;34m.[0m  [30;42m..[0m  [01;32mMakefile[0m  [01;32mbanker.c[0m  [01;32mcommands.txt[0m  [01;32mcustomer.txt[0m
+=== S10: make clean e make, so com o que o README manda ===
+rm -f banker banker.exe
+gcc -Wall -Wextra -std=c11 -o banker banker.c
+=== S10: executando o exemplo do README ===
+recursos: 3
+available: 2 3 0
+clientes: 5
+codigo de saida: 0
+RODA DO ZERO COM SO O QUE O README MANDA
+=== S10: make clean remove o compilado ===
+rm -f banker banker.exe
+ls: cannot access 'banker': No such file or directory
+codigo do ls: 2
+=== S10: git ===
+[31m??[m README.md
+exit
+
+Script done on 2026-11-16 10:40:01-03:00 [COMMAND_EXIT_CODE="0"]
+Script started on 2026-11-16 10:43:31-03:00 [TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="161" LINES="18"]
+[?2004h]0;henrique@Lenovin: /mnt/c/Users/calad/dev/imp6/hac2[01;32mhenrique@Lenovin[00m:[01;34m/mnt/c/Users/calad/dev/imp6/hac2[00m$ [7mcd /mnt/c/Users/calad/dev/imp6/hac2[27m
+[7mecho "=== S10: refazendo, grep de pendencia com limite de palavra ==="[27m
+[7mgrep -n -E '\b(TODO|FIXME|XXX)\b' README.md[27m
+[7mecho "codigo do grep: $? (1 significa que nao achou nada)"[27m
+[7mecho "=== S10: controle positivo do grep ==="[27m
+[7mprintf 'esta linha tem TODO de proposito\ntodos os casos sao tratados\n' > /tmp/controle-grep.txt[27m
+[7mgrep -n -E '\b(TODO|FIXME|XXX)\b' /tmp/controle-grep.txt[27m
+[7mecho "codigo do grep: $? (0 significa que achou, e tem que achar so a linha 1)"[27m
+[7mecho "=== S10: stdout limpo, como o README afirma ==="[27m
+[7mmake clean && make[27m
+[7m./banker 10 5 7 2>/dev/null | wc -c[27m
+[7mexit[27m[A[A[A[A[A[A[A[A[A[A[A]0;henrique@Lenovin: /mnt/c/Users/calad/dev/imp6/hac2[01;32mhenrique@Lenovin[00m:[01;34m/mnt/c/Users/calad/dev/imp6/hac2[00m$ cd /mnt/c/Users/calad/dev/imp6/hac2
+echo "=== S10: refazendo, grep de pendencia com limite de palavra ==="
+grep -n -E '\b(TODO|FIXME|XXX)\b' README.md
+echo "codigo do grep: $? (1 significa que nao achou nada)"
+echo "=== S10: controle positivo do grep ==="
+printf 'esta linha tem TODO de proposito\ntodos os casos sao tratados\n' > /tmp/controle-grep.txt
+grep -n -E '\b(TODO|FIXME|XXX)\b' /tmp/controle-grep.txt
+echo "codigo do grep: $? (0 significa que achou, e tem que achar so a linha 1)"
+echo "=== S10: stdout limpo, como o README afirma ==="
+make clean && make
+./banker 10 5 7 2>/dev/null | wc -c
+exit
+[?2004l=== S10: refazendo, grep de pendencia com limite de palavra ===
+codigo do grep: 1 (1 significa que nao achou nada)
+=== S10: controle positivo do grep ===
+[32m[K1[m[K[36m[K:[m[Kesta linha tem [01;31m[KTODO[m[K de proposito
+codigo do grep: 0 (0 significa que achou, e tem que achar so a linha 1)
+=== S10: stdout limpo, como o README afirma ===
+rm -f banker banker.exe
+gcc -Wall -Wextra -std=c11 -o banker banker.c
+41
+exit
+
+Script done on 2026-11-16 10:43:34-03:00 [COMMAND_EXIT_CODE="0"]
